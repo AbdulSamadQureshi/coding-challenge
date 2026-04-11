@@ -50,7 +50,6 @@ import coil.request.ImageRequest
 import com.bonial.brochure.R
 import com.bonial.brochure.presentation.model.BrochureUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
-import com.bonial.brochure.presentation.theme.White
 import com.bonial.core.ui.UiState
 import com.bonial.core.ui.extensions.shimmerEffect
 
@@ -74,7 +73,7 @@ fun BrochuresScreen(
         modifier = Modifier
             .fillMaxSize()
             .testTag("brochure_screen")
-            .background(White),
+            .background(MaterialTheme.colorScheme.background),
     )
 }
 
