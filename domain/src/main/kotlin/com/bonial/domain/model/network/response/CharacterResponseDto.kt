@@ -5,9 +5,9 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class BrochureResponseDto(
-    @SerializedName("_embedded")
-    val embedded: EmbeddedDto?,
-    @SerializedName("page")
-    val page: PagedDto?
-): Parcelable
+data class CharacterResponseDto(
+    @SerializedName("info")
+    val info: PageInfoDto?,
+    @SerializedName("results")
+    val results: List<CharacterDto>?,
+) : Parcelable

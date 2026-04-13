@@ -1,10 +1,9 @@
 <resources>
-    <string name="app_name">Brochures</string>
+    <string name="app_name">Rick &amp; Morty</string>
     <string name="error_generic">Something went wrong, please try again later.</string>
     <string name="error_image_unavailable">Image unavailable</string>
-    <string name="content_desc_brochure_image">Brochure Image</string>
+    <string name="content_desc_character_image">Character Image</string>
     <string name="content_desc_favourite">Add to favourites</string>
     <string name="content_desc_unfavourite">Remove from favourites</string>
-    <string name="label_distance_km">%.1f km away</string>
     <string name="label_back">Back</string>
 </resources>

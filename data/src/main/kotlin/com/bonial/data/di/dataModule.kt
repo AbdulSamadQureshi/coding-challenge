@@ -7,7 +7,7 @@ import com.bonial.data.local.BrochureLocalDataSourceImpl
 import com.bonial.data.local.BrochuresDao
 import com.bonial.data.local.BrochuresDatabase
 import com.bonial.data.local.FavouritesDao
-import com.bonial.data.remote.service.BrochuresApiService
+import com.bonial.data.remote.service.CharactersApiService
 import com.squareup.anvil.annotations.ContributesTo
 import dagger.Binds
 import dagger.Module
@@ -25,8 +25,8 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideBrochuresApiService(retrofit: Retrofit): BrochuresApiService {
-        return retrofit.create(BrochuresApiService::class.java)
+    fun provideCharactersApiService(retrofit: Retrofit): CharactersApiService {
+        return retrofit.create(CharactersApiService::class.java)
     }
 
     @Provides

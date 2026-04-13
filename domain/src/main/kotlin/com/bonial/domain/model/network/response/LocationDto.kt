@@ -4,10 +4,8 @@ import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
-
 @Parcelize
-data class PublisherDto(
+data class LocationDto(
     @SerializedName("name")
-    val name: String,
+    val name: String?,
 ) : Parcelable
-

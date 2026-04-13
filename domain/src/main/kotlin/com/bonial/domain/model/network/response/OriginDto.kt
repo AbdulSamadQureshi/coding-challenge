@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class EmbeddedDto(
-    @SerializedName("contents")
-    val contents: List<ContentWrapperDto> = emptyList()
+data class OriginDto(
+    @SerializedName("name")
+    val name: String?,
 ) : Parcelable

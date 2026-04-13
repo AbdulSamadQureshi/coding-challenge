@@ -14,17 +14,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,55 +54,116 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import com.bonial.brochure.R
-import com.bonial.brochure.presentation.model.BrochureUi
+import com.bonial.brochure.presentation.model.CharacterUi
 import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
-import com.bonial.core.ui.UiState
 import com.bonial.core.ui.extensions.shimmerEffect
 
-/**
- * Main screen for displaying brochures.
- * Passes state and callbacks down — stateless composables below this point.
- */
 @Composable
-fun BrochuresScreen(
-    viewModel: BrochuresViewModel,
-    onBrochureClick: (BrochureUi) -> Unit,
+fun CharactersScreen(
+    viewModel: CharactersViewModel,
+    onCharacterClick: (Int) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val lazyGridState = rememberLazyGridState()
 
-    BrochuresContent(
-        uiState = state.brochuresUiState,
-        onBrochureClick = onBrochureClick,
-        onFavouriteClick = { brochure ->
-            viewModel.sendIntent(BrochuresIntent.ToggleFavourite(brochure))
-        },
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisible = lazyGridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val totalItems = lazyGridState.layoutInfo.totalItemsCount
+            lastVisible >= totalItems - 4 && totalItems > 0
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            viewModel.sendIntent(CharactersIntent.LoadNextPage)
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .testTag("brochure_screen")
+            .testTag("characters_screen")
             .background(MaterialTheme.colorScheme.background),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            state.isLoading -> CharactersLoadingGrid()
+            state.error != null && state.characters.isEmpty() -> ErrorMessage(message = state.error)
+            else -> CharactersGrid(
+                characters = state.characters,
+                isLoadingNextPage = state.isLoadingNextPage,
+                lazyGridState = lazyGridState,
+                onCharacterClick = onCharacterClick,
+                onFavouriteClick = { character ->
+                    viewModel.sendIntent(CharactersIntent.ToggleFavourite(character))
+                },
+            )
+        }
+    }
 }
 
 @Composable
-private fun BrochuresContent(
-    uiState: UiState<List<BrochureUi>>,
-    onBrochureClick: (BrochureUi) -> Unit,
-    onFavouriteClick: (BrochureUi) -> Unit,
+fun CharactersLoadingGrid() {
+    val configuration = LocalConfiguration.current
+    val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        contentPadding = PaddingValues(16.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        items(10) {
+            CharacterShimmerItem()
+        }
+    }
+}
+
+@Composable
+fun CharactersGrid(
+    characters: List<CharacterUi>,
+    isLoadingNextPage: Boolean,
+    lazyGridState: LazyGridState,
+    onCharacterClick: (Int) -> Unit,
+    onFavouriteClick: (CharacterUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
+    val configuration = LocalConfiguration.current
+    val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
+
+    LazyVerticalGrid(
+        state = lazyGridState,
+        columns = GridCells.Fixed(columns),
+        contentPadding = PaddingValues(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("characters_grid"),
     ) {
-        when (uiState) {
-            is UiState.Loading -> BrochuresLoadingGrid()
-            is UiState.Success -> BrochuresGrid(
-                brochures = uiState.data,
-                onBrochureClick = onBrochureClick,
-                onFavouriteClick = onFavouriteClick,
+        items(
+            items = characters,
+            key = { it.id },
+        ) { character ->
+            CharacterItem(
+                name = character.name,
+                imageUrl = character.imageUrl,
+                isFavourite = character.isFavourite,
+                onClick = { onCharacterClick(character.id) },
+                onFavouriteClick = { onFavouriteClick(character) },
             )
-            is UiState.Error -> ErrorMessage(message = uiState.message)
-            else -> {}
+        }
+
+        if (isLoadingNextPage) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                        .testTag("next_page_loading"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                }
+            }
         }
     }
 }
@@ -111,62 +178,9 @@ fun ErrorMessage(message: String?) {
 }
 
 @Composable
-fun BrochuresLoadingGrid() {
-    val configuration = LocalConfiguration.current
-    val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(16.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        items(10) {
-            BrochureShimmerItem()
-        }
-    }
-}
-
-@Composable
-fun BrochuresGrid(
-    brochures: List<BrochureUi>,
-    onBrochureClick: (BrochureUi) -> Unit = {},
-    onFavouriteClick: (BrochureUi) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    val configuration = LocalConfiguration.current
-    val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(16.dp),
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("brochures_grid"),
-    ) {
-        items(
-            items = brochures,
-            key = { item -> item.coverUrl ?: item.hashCode() },
-        ) { brochure ->
-            BrochureItem(
-                title = brochure.title,
-                imageUrl = brochure.coverUrl,
-                publisherName = brochure.publisherName,
-                isFavourite = brochure.isFavourite,
-                onClick = { onBrochureClick(brochure) },
-                onFavouriteClick = { onFavouriteClick(brochure) },
-            )
-        }
-    }
-}
-
-/**
- * Atomic brochure card — independent of [BrochureUi], receives only primitive values.
- */
-@Composable
-fun BrochureItem(
-    title: String?,
+fun CharacterItem(
+    name: String?,
     imageUrl: String?,
-    publisherName: String?,
     isFavourite: Boolean = false,
     onClick: () -> Unit = {},
     onFavouriteClick: () -> Unit = {},
@@ -179,17 +193,17 @@ fun BrochureItem(
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .testTag("brochure_item")
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .testTag("character_item"),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.7f),
         ) {
-            BrochureImage(
+            CharacterImage(
                 imageUrl = imageUrl,
-                contentDescription = publisherName,
+                contentDescription = name,
                 onStateChanged = { state ->
                     isLoading = state is AsyncImagePainter.State.Loading
                     isError = state is AsyncImagePainter.State.Error
@@ -204,9 +218,9 @@ fun BrochureItem(
                 ImageErrorPlaceholder()
             }
 
-            if (!title.isNullOrBlank() && !isLoading && !isError) {
-                BrochureTitleOverlay(
-                    title = title,
+            if (!name.isNullOrBlank() && !isLoading && !isError) {
+                CharacterNameOverlay(
+                    name = name,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -226,10 +240,7 @@ private fun FavouriteButton(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    IconButton(
-        onClick = onToggle,
-        modifier = modifier,
-    ) {
+    IconButton(onClick = onToggle, modifier = modifier) {
         Icon(
             imageVector = if (isFavourite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
             contentDescription = stringResource(
@@ -241,7 +252,7 @@ private fun FavouriteButton(
 }
 
 @Composable
-fun BrochureImage(
+fun CharacterImage(
     imageUrl: String?,
     contentDescription: String?,
     onStateChanged: (AsyncImagePainter.State) -> Unit,
@@ -252,7 +263,7 @@ fun BrochureImage(
             .data(imageUrl)
             .crossfade(true)
             .build(),
-        contentDescription = contentDescription ?: stringResource(R.string.content_desc_brochure_image),
+        contentDescription = contentDescription ?: stringResource(R.string.content_desc_character_image),
         onState = onStateChanged,
         modifier = modifier.fillMaxSize(),
         contentScale = ContentScale.Crop,
@@ -287,7 +298,7 @@ fun ImageErrorPlaceholder(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BrochureTitleOverlay(title: String, modifier: Modifier = Modifier) {
+fun CharacterNameOverlay(name: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -300,7 +311,7 @@ fun BrochureTitleOverlay(title: String, modifier: Modifier = Modifier) {
             .padding(top = 16.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
     ) {
         Text(
-            text = title,
+            text = name,
             color = Color.White,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -311,7 +322,7 @@ fun BrochureTitleOverlay(title: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BrochureShimmerItem(modifier: Modifier = Modifier) {
+fun CharacterShimmerItem(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
             .padding(8.dp)
@@ -328,12 +339,18 @@ fun BrochureShimmerItem(modifier: Modifier = Modifier) {
 
 @Preview(showBackground = true)
 @Composable
-private fun BrochuresGridPreview() {
+private fun CharactersGridPreview() {
     CloseLoopWalletTheme {
         val mockData = listOf(
-            BrochureUi(id = 1, title = "Veganuary Rezepte", publisherName = "Publisher 1", coverUrl = null, distance = 0.5, isFavourite = false),
-            BrochureUi(id = 2, title = "Premium Offer", publisherName = "Publisher 2", coverUrl = null, distance = 1.2, isFavourite = true),
+            CharacterUi(id = 1, name = "Rick Sanchez", status = "Alive", species = "Human", imageUrl = null, isFavourite = false),
+            CharacterUi(id = 2, name = "Morty Smith", status = "Alive", species = "Human", imageUrl = null, isFavourite = true),
         )
-        BrochuresGrid(brochures = mockData)
+        CharactersGrid(
+            characters = mockData,
+            isLoadingNextPage = false,
+            lazyGridState = rememberLazyGridState(),
+            onCharacterClick = {},
+            onFavouriteClick = {},
+        )
     }
 }
