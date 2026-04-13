@@ -10,7 +10,7 @@ import com.bonial.domain.useCase.favourites.GetFavouriteCoverUrlsUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -43,6 +43,7 @@ class CharactersViewModel @Inject constructor(
     override fun createInitialState(): CharactersState = CharactersState()
 
     init {
+        observeFavourites()
         sendIntent(CharactersIntent.LoadCharacters)
     }
 
@@ -59,6 +60,11 @@ class CharactersViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads a page of characters. Pagination and favourites are intentionally decoupled:
+     * this function only manages the list and page state; [observeFavourites] independently
+     * keeps the isFavourite flag up-to-date on the accumulated list.
+     */
     private fun loadCharacters(page: Int, isNextPage: Boolean) {
         viewModelScope.launch {
             if (isNextPage) {
@@ -67,18 +73,11 @@ class CharactersViewModel @Inject constructor(
                 setState { copy(isLoading = true, error = null) }
             }
 
-            combine(
-                charactersUseCase(page),
-                getFavouriteCoverUrlsUseCase(),
-            ) { response, favouriteUrls ->
+            val savedFavourites = getFavouriteCoverUrlsUseCase().first()
+
+            charactersUseCase(page).collectLatest { response ->
                 when (response) {
-                    is Request.Loading -> null
-                    is Request.Error -> {
-                        val message = response.apiError.toErrorMessage()
-                        setEffect { CharactersEffect.ShowError(message) }
-                        setState { copy(isLoading = false, isLoadingNextPage = false, error = message) }
-                        null
-                    }
+                    is Request.Loading -> Unit
                     is Request.Success -> {
                         val newItems = response.data.characters.map { character ->
                             CharacterUi(
@@ -87,32 +86,42 @@ class CharactersViewModel @Inject constructor(
                                 status = character.status,
                                 species = character.species,
                                 imageUrl = character.imageUrl,
-                                isFavourite = character.imageUrl != null && character.imageUrl in favouriteUrls,
+                                isFavourite = character.imageUrl != null && character.imageUrl in savedFavourites,
                             )
                         }
-                        Triple(newItems, response.data.totalPages, favouriteUrls)
+                        setState {
+                            copy(
+                                characters = if (isNextPage) characters + newItems else newItems,
+                                isLoading = false,
+                                isLoadingNextPage = false,
+                                currentPage = page,
+                                totalPages = response.data.totalPages,
+                                error = null,
+                            )
+                        }
+                    }
+                    is Request.Error -> {
+                        val message = response.apiError.toErrorMessage()
+                        setEffect { CharactersEffect.ShowError(message) }
+                        setState { copy(isLoading = false, isLoadingNextPage = false, error = message) }
                     }
                 }
-            }.collectLatest { result ->
-                result ?: return@collectLatest
-                val (newItems, totalPages, favouriteUrls) = result
+            }
+        }
+    }
+
+    /**
+     * Runs for the lifetime of the ViewModel, reactively updating the isFavourite flag
+     * on every item whenever the favourites set changes — without touching pagination state.
+     */
+    private fun observeFavourites() {
+        viewModelScope.launch {
+            getFavouriteCoverUrlsUseCase().collectLatest { favouriteUrls ->
                 setState {
-                    val updatedAll = if (isNextPage) {
-                        characters + newItems
-                    } else {
-                        newItems
-                    }
-                    // Re-apply favourite state on all items in case favourites changed
-                    val withFavourites = updatedAll.map { item ->
-                        item.copy(isFavourite = item.imageUrl != null && item.imageUrl in favouriteUrls)
-                    }
                     copy(
-                        characters = withFavourites,
-                        isLoading = false,
-                        isLoadingNextPage = false,
-                        currentPage = if (isNextPage) currentPage + 1 else 1,
-                        totalPages = totalPages,
-                        error = null,
+                        characters = characters.map { item ->
+                            item.copy(isFavourite = item.imageUrl != null && item.imageUrl in favouriteUrls)
+                        },
                     )
                 }
             }

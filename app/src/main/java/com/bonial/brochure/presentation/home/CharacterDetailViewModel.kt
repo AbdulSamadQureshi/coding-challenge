@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 data class CharacterDetailState(
     val character: CharacterDetailUi? = null,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val error: String? = null,
     val isFavourite: Boolean = false,
 )

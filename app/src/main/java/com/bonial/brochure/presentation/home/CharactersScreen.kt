@@ -1,11 +1,16 @@
 package com.bonial.brochure.presentation.home
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,12 +18,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -37,8 +44,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -145,6 +154,7 @@ fun CharactersGrid(
         ) { character ->
             CharacterItem(
                 name = character.name,
+                status = character.status,
                 imageUrl = character.imageUrl,
                 isFavourite = character.isFavourite,
                 onClick = { onCharacterClick(character.id) },
@@ -180,6 +190,7 @@ fun ErrorMessage(message: String?) {
 @Composable
 fun CharacterItem(
     name: String?,
+    status: String?,
     imageUrl: String?,
     isFavourite: Boolean = false,
     onClick: () -> Unit = {},
@@ -189,11 +200,24 @@ fun CharacterItem(
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.94f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "card_scale",
+    )
+
     Card(
+        onClick = onClick,
+        interactionSource = interactionSource,
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .testTag("character_item"),
     ) {
         Box(
@@ -218,19 +242,65 @@ fun CharacterItem(
                 ImageErrorPlaceholder()
             }
 
+            // Status badge — top-left
+            if (!status.isNullOrBlank() && !isLoading && !isError) {
+                StatusBadge(
+                    status = status,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp),
+                )
+            }
+
+            // Favourite button — top-right
+            FavouriteButton(
+                isFavourite = isFavourite,
+                onToggle = onFavouriteClick,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
+
+            // Name overlay — bottom
             if (!name.isNullOrBlank() && !isLoading && !isError) {
                 CharacterNameOverlay(
                     name = name,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-
-            FavouriteButton(
-                isFavourite = isFavourite,
-                onToggle = onFavouriteClick,
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
         }
+    }
+}
+
+@Composable
+private fun StatusBadge(status: String, modifier: Modifier = Modifier) {
+    val (dotColor, labelColor) = when (status.lowercase()) {
+        "alive" -> Color(0xFF4CAF50) to Color(0xFF4CAF50)
+        "dead" -> Color(0xFFF44336) to Color(0xFFF44336)
+        else -> Color(0xFF9E9E9E) to Color(0xFF9E9E9E)
+    }
+
+    Row(
+        modifier = modifier
+            .background(
+                color = Color.Black.copy(alpha = 0.55f),
+                shape = MaterialTheme.shapes.small,
+            )
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = status,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            maxLines = 1,
+        )
     }
 }
 
@@ -304,11 +374,11 @@ fun CharacterNameOverlay(name: String, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)),
                     startY = 0f,
                 ),
             )
-            .padding(top = 16.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
+            .padding(top = 24.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
     ) {
         Text(
             text = name,
@@ -343,7 +413,7 @@ private fun CharactersGridPreview() {
     CloseLoopWalletTheme {
         val mockData = listOf(
             CharacterUi(id = 1, name = "Rick Sanchez", status = "Alive", species = "Human", imageUrl = null, isFavourite = false),
-            CharacterUi(id = 2, name = "Morty Smith", status = "Alive", species = "Human", imageUrl = null, isFavourite = true),
+            CharacterUi(id = 2, name = "Morty Smith", status = "Dead", species = "Human", imageUrl = null, isFavourite = true),
         )
         CharactersGrid(
             characters = mockData,
