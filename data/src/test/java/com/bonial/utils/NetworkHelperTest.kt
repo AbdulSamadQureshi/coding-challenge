@@ -43,7 +43,7 @@ class NetworkHelperTest {
             assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
             val error = awaitItem() as Request.Error
             assertThat(error.apiError?.code).isEqualTo("NetworkError")
-            assertThat(error.apiError?.message).isEqualTo("check your internet connection")
+            assertThat(error.apiError?.message).isEqualTo("Check your internet connection and try again.")
             awaitComplete()
         }
     }
@@ -80,6 +80,33 @@ class NetworkHelperTest {
             val error = awaitItem() as Request.Error
             assertThat(error.apiError?.code).isEqualTo("Unknown")
             assertThat(error.apiError?.message).isEqualTo("Unknown error")
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `HttpException maps 401 to session expired message`() = runBlocking {
+        val response = Response.error<String>(401, "".toResponseBody())
+        val flow = safeApiCall<String> { throw HttpException(response) }
+        flow.test {
+            awaitItem() // Loading
+            val error = awaitItem() as Request.Error
+            assertThat(error.apiError?.code).isEqualTo("401")
+            assertThat(error.apiError?.message).isEqualTo("Your session has expired. Please sign in again.")
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `HttpException maps 500 to generic server message`() = runBlocking {
+        val response = Response.error<String>(500, "".toResponseBody())
+        val flow = safeApiCall<String> { throw HttpException(response) }
+        flow.test {
+            awaitItem() // Loading
+            val error = awaitItem() as Request.Error
+            assertThat(error.apiError?.code).isEqualTo("500")
+            assertThat(error.apiError?.message)
+                .isEqualTo("The server is having trouble right now. Please try again later.")
             awaitComplete()
         }
     }
