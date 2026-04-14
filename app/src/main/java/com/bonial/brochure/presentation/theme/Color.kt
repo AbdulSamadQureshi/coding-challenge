@@ -18,3 +18,18 @@ val Pink40 = Color(0xFF7D5260)
 
 val InviteFriend = Color(0xFF2563EB)
 
+// Character status indicator colors — kept here so badges in list and detail stay in sync.
+val StatusAlive = Color(0xFF4CAF50)
+val StatusDead = Color(0xFFF44336)
+val StatusUnknown = Color(0xFF9E9E9E)
+
+// Soft backgrounds for the detail-screen status chip (light tint of each status color).
+val StatusAliveBg = Color(0xFFE8F5E9)
+val StatusDeadBg = Color(0xFFFFEBEE)
+val StatusUnknownBg = Color(0xFFF5F5F5)
+
+// Darker, readable text tones on top of the above chip backgrounds.
+val StatusAliveText = Color(0xFF2E7D32)
+val StatusDeadText = Color(0xFFC62828)
+val StatusUnknownText = Color(0xFF616161)
+

@@ -58,6 +58,15 @@ import com.bonial.brochure.presentation.home.CharacterDetailIntent
 import com.bonial.brochure.presentation.home.CharacterDetailViewModel
 import com.bonial.brochure.presentation.home.ErrorMessage
 import com.bonial.brochure.presentation.model.CharacterDetailUi
+import com.bonial.brochure.presentation.theme.StatusAliveBg
+import com.bonial.brochure.presentation.theme.StatusAliveText
+import com.bonial.brochure.presentation.theme.StatusAlive
+import com.bonial.brochure.presentation.theme.StatusDeadBg
+import com.bonial.brochure.presentation.theme.StatusDeadText
+import com.bonial.brochure.presentation.theme.StatusDead
+import com.bonial.brochure.presentation.theme.StatusUnknownBg
+import com.bonial.brochure.presentation.theme.StatusUnknownText
+import com.bonial.brochure.presentation.theme.StatusUnknown
 import com.bonial.core.ui.extensions.shimmerEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -207,14 +216,14 @@ private fun CharacterDetailContent(character: CharacterDetailUi) {
 @Composable
 private fun StatusChip(status: String, modifier: Modifier = Modifier) {
     val (bgColor, dotColor) = when (status.lowercase()) {
-        "alive" -> Color(0xFFE8F5E9) to Color(0xFF4CAF50)
-        "dead" -> Color(0xFFFFEBEE) to Color(0xFFF44336)
-        else -> Color(0xFFF5F5F5) to Color(0xFF9E9E9E)
+        "alive" -> StatusAliveBg to StatusAlive
+        "dead" -> StatusDeadBg to StatusDead
+        else -> StatusUnknownBg to StatusUnknown
     }
     val textColor = when (status.lowercase()) {
-        "alive" -> Color(0xFF2E7D32)
-        "dead" -> Color(0xFFC62828)
-        else -> Color(0xFF616161)
+        "alive" -> StatusAliveText
+        "dead" -> StatusDeadText
+        else -> StatusUnknownText
     }
 
     Row(

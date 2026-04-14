@@ -28,23 +28,32 @@ inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<R
 }
 
 /**
- * Parses a Throwable to a specific ApiError.
+ * Parses a Throwable to a user-friendly ApiError. HTTP codes are mapped to messages
+ * that are safe to surface in the UI — raw Retrofit messages often leak URLs or
+ * framework-internal text that does not help the user.
  */
-fun manageThrowable(throwable: Throwable): ApiError {
-    return when (throwable) {
-        is IOException -> ApiError(code = "NetworkError", message = "check your internet connection")
-        is HttpException -> {
-            val response = throwable.response()
-            val httpCode = response?.code() ?: 0
-            // You might need a way to parse the error body if Retrofit doesn't automatically.
-            // This is a placeholder for how you might handle it.
-            ApiError(
-                message = throwable.message(),
-                code = httpCode.toString(),
-            )
-        }
-        else -> {
-            ApiError(code = "Unknown", message = throwable.message ?: "An unexpected error occurred")
-        }
+fun manageThrowable(throwable: Throwable): ApiError = when (throwable) {
+    is IOException -> ApiError(
+        code = "NetworkError",
+        message = "Check your internet connection and try again.",
+    )
+    is HttpException -> {
+        val httpCode = throwable.response()?.code() ?: 0
+        ApiError(code = httpCode.toString(), message = httpCode.toUserMessage())
     }
+    else -> ApiError(
+        code = "Unknown",
+        message = throwable.message ?: "An unexpected error occurred.",
+    )
+}
+
+private fun Int.toUserMessage(): String = when (this) {
+    400 -> "The request was invalid. Please try again."
+    401 -> "Your session has expired. Please sign in again."
+    403 -> "You do not have permission to access this resource."
+    404 -> "The requested resource was not found."
+    408 -> "The request timed out. Please try again."
+    429 -> "Too many requests. Please wait a moment and retry."
+    in 500..599 -> "The server is having trouble right now. Please try again later."
+    else -> "Something went wrong. Please try again."
 }
