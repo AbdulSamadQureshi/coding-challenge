@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.anvil)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -133,6 +134,16 @@ android {
         compose = true
         buildConfig = true
     }
+    // Roborazzi runs under Robolectric, which needs Android resources on the JVM classpath.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+    // Sources for screenshot baselines live with the code, not under build/.
+    sourceSets.getByName("test").resources.srcDir("src/test/screenshots")
+}
+
+roborazzi {
+    outputDir.set(file("src/test/screenshots"))
 }
 
 dependencies {
@@ -165,6 +176,11 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.rule)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
