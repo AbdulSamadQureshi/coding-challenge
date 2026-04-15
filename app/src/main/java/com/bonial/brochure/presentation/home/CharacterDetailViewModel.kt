@@ -1,21 +1,21 @@
 package com.bonial.brochure.presentation.home
 
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.bonial.brochure.presentation.model.CharacterDetailUi
-import com.bonial.brochure.presentation.navigation.CharacterDetailRoute
+import com.bonial.brochure.presentation.navigation.CharacterDetailKey
 import com.bonial.brochure.presentation.utils.toErrorMessage
 import com.bonial.core.base.MviViewModel
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.useCase.characters.CharacterDetailUseCase
 import com.bonial.domain.useCase.favourites.IsFavouriteFlowUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import androidx.lifecycle.viewModelScope
 
 data class CharacterDetailState(
     val character: CharacterDetailUi? = null,
@@ -35,15 +35,13 @@ sealed class CharacterDetailEffect {
     data class Share(val text: String) : CharacterDetailEffect()
 }
 
-@HiltViewModel
-class CharacterDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = CharacterDetailViewModel.Factory::class)
+class CharacterDetailViewModel @AssistedInject constructor(
+    @Assisted val navKey: CharacterDetailKey,
     private val characterDetailUseCase: CharacterDetailUseCase,
     private val isFavouriteFlowUseCase: IsFavouriteFlowUseCase,
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
 ) : MviViewModel<CharacterDetailState, CharacterDetailIntent, CharacterDetailEffect>() {
-
-    private val route = savedStateHandle.toRoute<CharacterDetailRoute>()
 
     /**
      * Tracks the active load coroutine. If the screen is somehow recreated or the
@@ -55,13 +53,13 @@ class CharacterDetailViewModel @Inject constructor(
     override fun createInitialState(): CharacterDetailState = CharacterDetailState()
 
     init {
-        loadCharacter(route.id)
+        loadCharacter(navKey.id)
     }
 
     override fun handleIntent(intent: CharacterDetailIntent) {
         when (intent) {
             is CharacterDetailIntent.ToggleFavourite -> toggleFavourite()
-            is CharacterDetailIntent.Retry -> loadCharacter(route.id)
+            is CharacterDetailIntent.Retry -> loadCharacter(navKey.id)
             is CharacterDetailIntent.ShareCharacter -> shareCharacter()
         }
     }
@@ -132,5 +130,10 @@ class CharacterDetailViewModel @Inject constructor(
         viewModelScope.launch {
             toggleFavouriteUseCase(imageUrl, uiState.value.isFavourite)
         }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(navKey: CharacterDetailKey): CharacterDetailViewModel
     }
 }

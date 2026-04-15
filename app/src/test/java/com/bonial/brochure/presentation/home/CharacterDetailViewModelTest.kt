@@ -1,7 +1,7 @@
 package com.bonial.brochure.presentation.home
 
-import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.bonial.brochure.presentation.navigation.CharacterDetailKey
 import com.bonial.brochure.testing.MainDispatcherRule
 import com.bonial.domain.model.CharacterDetail
 import com.bonial.domain.model.network.response.ApiError
@@ -16,23 +16,17 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * ViewModel tests for [CharacterDetailViewModel].
  *
- * Runs under Robolectric because [androidx.navigation.SavedStateHandle.toRoute] calls
- * into [android.os.BaseBundle] internally — a real Android environment is required
- * even though no UI is rendered.
+ * Navigation 3 passes the [CharacterDetailKey] directly via assisted injection, so
+ * there is no need for [android.os.SavedStateHandle] or a Robolectric test runner.
  */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterDetailViewModelTest {
 
@@ -43,13 +37,13 @@ class CharacterDetailViewModelTest {
     private val isFavouriteFlowUseCase: IsFavouriteFlowUseCase = mock()
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase = mock()
 
-    // Navigation 2.8 type-safe routes store each arg under its property name.
-    // `SavedStateHandle(mapOf("id" to 42))` replicates what NavController puts in
-    // the back stack entry so `toRoute<CharacterDetailRoute>()` can reconstruct it.
-    private fun savedStateHandle(id: Int = CHARACTER_ID) = SavedStateHandle(mapOf("id" to id))
-
     private fun viewModel(id: Int = CHARACTER_ID): CharacterDetailViewModel =
-        CharacterDetailViewModel(savedStateHandle(id), characterDetailUseCase, isFavouriteFlowUseCase, toggleFavouriteUseCase)
+        CharacterDetailViewModel(
+            navKey = CharacterDetailKey(id),
+            characterDetailUseCase = characterDetailUseCase,
+            isFavouriteFlowUseCase = isFavouriteFlowUseCase,
+            toggleFavouriteUseCase = toggleFavouriteUseCase,
+        )
 
     // ------------------------------------------------------------------
     // Success path
@@ -193,6 +187,35 @@ class CharacterDetailViewModelTest {
         // toggleFavouriteUseCase must never be invoked because imageUrl is null.
         verify(toggleFavouriteUseCase, org.mockito.kotlin.never())
             .invoke(org.mockito.kotlin.any(), org.mockito.kotlin.any())
+    }
+
+    // ------------------------------------------------------------------
+    // ShareCharacter
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `ShareCharacter emits Share effect with all character details`() = runTest {
+        givenSuccessResponse(CHARACTER_ID)
+
+        val vm = viewModel()
+        // Wait for character to load.
+        vm.uiState.test {
+            var state = awaitItem()
+            while (state.isLoading || state.character == null) state = awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        vm.effect.test {
+            vm.sendIntent(CharacterDetailIntent.ShareCharacter)
+            val effect = awaitItem()
+            assertThat(effect).isInstanceOf(CharacterDetailEffect.Share::class.java)
+            val shareText = (effect as CharacterDetailEffect.Share).text
+            assertThat(shareText).contains("Rick Sanchez")
+            assertThat(shareText).contains("Human")
+            assertThat(shareText).contains("Alive")
+            assertThat(shareText).contains(IMAGE_URL)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     // ------------------------------------------------------------------

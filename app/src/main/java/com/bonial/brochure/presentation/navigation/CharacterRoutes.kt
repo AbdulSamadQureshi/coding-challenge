@@ -1,11 +1,10 @@
 package com.bonial.brochure.presentation.navigation
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-object CharacterListRoute
+data object CharacterListKey : NavKey
 
 @Serializable
-data class CharacterDetailRoute(
-    val id: Int,
-)
+data class CharacterDetailKey(val id: Int) : NavKey
