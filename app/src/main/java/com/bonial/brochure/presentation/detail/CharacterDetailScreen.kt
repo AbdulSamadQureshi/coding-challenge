@@ -56,9 +56,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.request.crossfade
+import coil3.request.placeholder
 import com.bonial.brochure.R
 import com.bonial.brochure.presentation.home.CharacterDetailEffect
 import com.bonial.brochure.presentation.home.CharacterDetailIntent

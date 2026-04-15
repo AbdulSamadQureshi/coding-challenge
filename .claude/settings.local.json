@@ -16,7 +16,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(rm /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/.git/worktrees/jolly-tharp/index.lock)",
-      "Bash(git -C /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/.claude/worktrees/jolly-tharp add -A)"
+      "Bash(git -C /Users/abdulsamadqureshi/AndroidStudioProjects/BonialCodingChallenge/.claude/worktrees/jolly-tharp add -A)",
+      "Bash(git checkout:*)"
     ]
   }
 }
