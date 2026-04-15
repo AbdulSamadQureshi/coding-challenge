@@ -61,7 +61,6 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":domain"))
 
     api(libs.retrofit.core)
     api(libs.retrofit.gson)

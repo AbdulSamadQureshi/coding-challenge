@@ -1,4 +1,4 @@
-package com.bonial.utils
+package com.bonial.domain.utils
 
 import app.cash.turbine.test
 import com.bonial.domain.model.network.response.Request
@@ -11,10 +11,6 @@ import retrofit2.Response
 import java.io.IOException
 
 class NetworkHelperTest {
-
-    // ----------------------------------------------------------------
-    // safeApiCall
-    // ----------------------------------------------------------------
 
     @Test
     fun `safeApiCall should emit Loading then Success when api call is successful`() = runBlocking {
@@ -86,10 +82,6 @@ class NetworkHelperTest {
         }
     }
 
-    // ----------------------------------------------------------------
-    // withRetry — all tests use a no-op delayProvider so they are fast
-    // ----------------------------------------------------------------
-
     @Test
     fun `withRetry succeeds on the first attempt without retrying`() = runBlocking {
         var callCount = 0
@@ -139,7 +131,6 @@ class NetworkHelperTest {
             }
         } catch (_: Throwable) {}
 
-        // Must NOT retry — 404 is a client error, not a rate-limit.
         assertThat(callCount).isEqualTo(1)
     }
 
@@ -166,13 +157,8 @@ class NetworkHelperTest {
             }
         } catch (_: Throwable) {}
 
-        // Fixed 1-second delay for each of the 2 gaps between 3 attempts.
         assertThat(delays).containsExactly(1_000L, 1_000L).inOrder()
     }
-
-    // ----------------------------------------------------------------
-    // isRateLimitError
-    // ----------------------------------------------------------------
 
     @Test
     fun `isRateLimitError returns true only for HTTP 429`() {

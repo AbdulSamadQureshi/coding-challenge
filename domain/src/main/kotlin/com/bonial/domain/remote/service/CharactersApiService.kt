@@ -1,7 +1,7 @@
-package com.bonial.data.remote.service
+package com.bonial.domain.remote.service
 
-import com.bonial.data.remote.model.CharacterDto
-import com.bonial.data.remote.model.CharacterResponseDto
+import com.bonial.domain.remote.model.CharacterDto
+import com.bonial.domain.remote.model.CharacterResponseDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

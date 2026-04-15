@@ -1,15 +1,10 @@
-package com.bonial.data.mapper
+package com.bonial.domain.mapper
 
 import com.bonial.domain.model.Character
 import com.bonial.domain.model.CharacterDetail
-import com.bonial.data.remote.model.CharacterDto
-import com.bonial.data.remote.model.CharacterResponseDto
+import com.bonial.domain.remote.model.CharacterDto
+import com.bonial.domain.remote.model.CharacterResponseDto
 import com.bonial.domain.repository.CharactersPage
-
-/**
- * DTO → domain mappers. Kept in the data layer so domain stays free of transport concerns.
- * File-level functions (not extension methods) to make them trivially unit-testable.
- */
 
 internal fun CharacterDto.toDomain(): Character = Character(
     id = id,

@@ -1,4 +1,4 @@
-package com.bonial.data.remote.model
+package com.bonial.domain.remote.model
 
 import com.google.gson.annotations.SerializedName
 

@@ -1,14 +1,12 @@
-package com.bonial.data.repository
+package com.bonial.domain.repository
 
-import com.bonial.data.mapper.toDomainDetail
-import com.bonial.data.mapper.toDomainPage
-import com.bonial.data.remote.service.CharactersApiService
-import com.bonial.data.util.mapSuccess
+import com.bonial.domain.mapper.toDomainDetail
+import com.bonial.domain.mapper.toDomainPage
+import com.bonial.domain.remote.service.CharactersApiService
+import com.bonial.domain.utils.mapSuccess
+import com.bonial.domain.utils.safeApiCall
 import com.bonial.domain.model.CharacterDetail
 import com.bonial.domain.model.network.response.Request
-import com.bonial.domain.repository.CharactersPage
-import com.bonial.domain.repository.CharactersRepository
-import com.bonial.utils.safeApiCall
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

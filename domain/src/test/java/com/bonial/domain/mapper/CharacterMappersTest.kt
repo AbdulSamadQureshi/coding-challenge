@@ -1,10 +1,10 @@
-package com.bonial.data.mapper
+package com.bonial.domain.mapper
 
-import com.bonial.data.remote.model.CharacterDto
-import com.bonial.data.remote.model.CharacterResponseDto
-import com.bonial.data.remote.model.LocationDto
-import com.bonial.data.remote.model.OriginDto
-import com.bonial.data.remote.model.PageInfoDto
+import com.bonial.domain.remote.model.CharacterDto
+import com.bonial.domain.remote.model.CharacterResponseDto
+import com.bonial.domain.remote.model.LocationDto
+import com.bonial.domain.remote.model.OriginDto
+import com.bonial.domain.remote.model.PageInfoDto
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
@@ -80,7 +80,6 @@ class CharacterMappersTest {
         val page = response.toDomainPage()
 
         assertThat(page.characters).isEmpty()
-        // Callers rely on totalPages >= 1 so pagination math doesn't underflow.
         assertThat(page.totalPages).isEqualTo(1)
     }
 }
