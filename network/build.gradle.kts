@@ -22,28 +22,42 @@ android {
 
     buildTypes {
         release {
-            val releaseProperties = Properties()
-            val releasePropertiesFile = rootProject.file("release.properties")
-            if (releasePropertiesFile.exists()) {
-                releaseProperties.load(FileInputStream(releasePropertiesFile))
-                buildConfigField("String", "BASE_URL", "\"${releaseProperties.getProperty("BASE_URL")}\"")
-                buildConfigField("String", "ENVIRONMENT", "\"${releaseProperties.getProperty("ENVIRONMENT")}\"")
+            val props = Properties()
+            val propsFile = rootProject.file("release.properties")
+            if (propsFile.exists()) {
+                props.load(FileInputStream(propsFile))
+                buildConfigField("String", "BASE_URL", "\"${props.getProperty("BASE_URL")}\"")
+                buildConfigField("String", "ENVIRONMENT", "\"${props.getProperty("ENVIRONMENT")}\"")
             } else {
                 buildConfigField("String", "BASE_URL", "\"https://rickandmortyapi.com/api/\"")
                 buildConfigField("String", "ENVIRONMENT", "\"production\"")
             }
         }
         getByName("debug") {
-            val debugProperties = Properties()
-            val debugPropertiesFile = rootProject.file("staging.properties")
-            if (debugPropertiesFile.exists()) {
-                debugProperties.load(FileInputStream(debugPropertiesFile))
-                buildConfigField("String", "BASE_URL", "\"${debugProperties.getProperty("BASE_URL")}\"")
-                buildConfigField("String", "ENVIRONMENT", "\"${debugProperties.getProperty("ENVIRONMENT")}\"")
+            val props = Properties()
+            val propsFile = rootProject.file("debug.properties")
+            if (propsFile.exists()) {
+                props.load(FileInputStream(propsFile))
+                buildConfigField("String", "BASE_URL", "\"${props.getProperty("BASE_URL")}\"")
+                buildConfigField("String", "ENVIRONMENT", "\"${props.getProperty("ENVIRONMENT")}\"")
             } else {
                 buildConfigField("String", "BASE_URL", "\"https://rickandmortyapi.com/api/\"")
-                buildConfigField("String", "ENVIRONMENT", "\"staging\"")
+                buildConfigField("String", "ENVIRONMENT", "\"debug\"")
             }
+        }
+        val qa by creating {
+            initWith(getByName("release"))
+            val props = Properties()
+            val propsFile = rootProject.file("qa.properties")
+            if (propsFile.exists()) {
+                props.load(FileInputStream(propsFile))
+                buildConfigField("String", "BASE_URL", "\"${props.getProperty("BASE_URL")}\"")
+                buildConfigField("String", "ENVIRONMENT", "\"${props.getProperty("ENVIRONMENT")}\"")
+            } else {
+                buildConfigField("String", "BASE_URL", "\"https://rickandmortyapi.com/api/\"")
+                buildConfigField("String", "ENVIRONMENT", "\"qa\"")
+            }
+            matchingFallbacks += listOf("release")
         }
     }
 
