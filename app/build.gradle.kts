@@ -64,33 +64,22 @@ configure<ApplicationExtension> {
         }
 
         getByName("debug") {
-            // Effectively making it invisible or internal by not defining extras, 
-            // but Gradle requires 'debug' to exist. We will rely on variantFilter 
-            // to hide it from the IDE if needed, or simply not use it.
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
 
         val qa by creating {
-            initWith(getByName("release")) // Inherit release config for ProGuard
+            initWith(getByName("release")) // Inherit release ProGuard config
             isDebuggable = true
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
             matchingFallbacks += listOf("release")
         }
-
-        val staging by creating {
-            initWith(getByName("release"))
-            isDebuggable = true
-            isMinifyEnabled = false // Disabled for Staging as requested
-            isShrinkResources = false
-            applicationIdSuffix = ".staging"
-            versionNameSuffix = "-staging"
-            matchingFallbacks += listOf("release")
-        }
     }
 
-    // Note: the debug build type is intentionally left with minimal config above.
-    // We do NOT disable it via beforeVariants because doing so also kills the
-    // testDebugUnitTest task, making `./gradlew test` a no-op.
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -173,6 +162,5 @@ dependencies {
     // activity manifest (needed by Robolectric screenshot tests) must be declared
     // for each variant that runs unit tests.
     add("qaImplementation", libs.androidx.compose.ui.test.manifest)
-    add("stagingImplementation", libs.androidx.compose.ui.test.manifest)
     add("releaseImplementation", libs.androidx.compose.ui.test.manifest)
 }
