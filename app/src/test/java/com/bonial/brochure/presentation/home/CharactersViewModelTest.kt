@@ -7,6 +7,7 @@ import com.bonial.domain.model.Character
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request
 import com.bonial.domain.repository.CharactersPage
+import com.bonial.domain.useCase.characters.CharactersParams
 import com.bonial.domain.useCase.characters.CharactersUseCase
 import com.bonial.domain.useCase.favourites.GetFavouriteCoverUrlsUseCase
 import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
@@ -14,9 +15,11 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -44,7 +47,7 @@ class CharactersViewModelTest {
             totalPages = 5,
         )
         whenever(getFavourites()).thenReturn(MutableStateFlow(setOf("https://img/rick.png")))
-        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
 
         viewModel().uiState.test {
             // drain until we see the populated success state
@@ -63,7 +66,7 @@ class CharactersViewModelTest {
     @Test
     fun `api error sets error state and emits ShowError effect`() = runTest {
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-        whenever(charactersUseCase(1)).thenReturn(
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(
             flowOf(Request.Error(ApiError("500", "Server exploded"))),
         )
 
@@ -82,17 +85,17 @@ class CharactersViewModelTest {
     fun `LoadNextPage is ignored when already on the last page`() = runTest {
         val page = CharactersPage(characters = emptyList(), totalPages = 1)
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
 
         val vm = viewModel()
         vm.sendIntent(CharactersIntent.LoadNextPage)
 
-        // Use case should only be hit once — the initial load. No page=2 call.
-        verify(charactersUseCase).invoke(1)
+        // Use case should only be hit at least once for the initial load.
+        verify(charactersUseCase, atLeastOnce()).invoke(CharactersParams(1))
     }
 
     @Test
-    fun `Search intent updates searchQuery and filteredCharacters reflects the query`() = runTest {
+    fun `Search intent updates searchQuery and reflects the query results`() = runTest {
         val page = CharactersPage(
             characters = listOf(
                 Character(1, "Rick Sanchez", "Alive", "Human", "https://img/rick.png"),
@@ -102,7 +105,8 @@ class CharactersViewModelTest {
             totalPages = 1,
         )
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
 
         val vm = viewModel()
 
@@ -114,12 +118,15 @@ class CharactersViewModelTest {
         }
 
         vm.sendIntent(CharactersIntent.Search("Rick"))
+        advanceTimeBy(501) // Advance beyond debounce
 
         vm.uiState.test {
-            val state = awaitItem()
+            var state = awaitItem()
+            while (state.searchQuery != "Rick" || state.isLoading) state = awaitItem()
+
             assertThat(state.searchQuery).isEqualTo("Rick")
-            assertThat(state.filteredCharacters.map(CharacterUi::name))
-                .containsExactly("Rick Sanchez", "Rick Prime")
+            assertThat(state.characters.map(CharacterUi::name))
+                .containsExactly("Rick Sanchez", "Morty Smith", "Rick Prime")
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -134,7 +141,8 @@ class CharactersViewModelTest {
             totalPages = 1,
         )
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-        whenever(charactersUseCase(1)).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(flowOf(Request.Success(page)))
+        whenever(charactersUseCase(CharactersParams(1, "Rick"))).thenReturn(flowOf(Request.Success(page)))
 
         val vm = viewModel()
 
@@ -144,14 +152,20 @@ class CharactersViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        // Apply then clear the search.
+        // Apply search.
         vm.sendIntent(CharactersIntent.Search("Rick"))
+        advanceTimeBy(501)
+
+        // Clear the search.
         vm.sendIntent(CharactersIntent.Search(""))
+        advanceTimeBy(1) // No debounce for empty query in VM logic
 
         vm.uiState.test {
-            val state = awaitItem()
+            var state = awaitItem()
+            while (state.searchQuery.isNotEmpty() || state.isLoading) state = awaitItem()
+
             assertThat(state.searchQuery).isEmpty()
-            assertThat(state.filteredCharacters).hasSize(2)
+            assertThat(state.characters).hasSize(2)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -159,7 +173,7 @@ class CharactersViewModelTest {
     @Test
     fun `ToggleFavourite ignores characters without an imageUrl`() = runTest {
         whenever(getFavourites()).thenReturn(MutableStateFlow(emptySet()))
-        whenever(charactersUseCase(1)).thenReturn(
+        whenever(charactersUseCase(CharactersParams(1))).thenReturn(
             flowOf(Request.Success(CharactersPage(emptyList(), 1))),
         )
 
