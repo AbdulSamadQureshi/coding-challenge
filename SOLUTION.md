@@ -15,24 +15,6 @@ A high-performance, offline-first Android application built with **Clean Archite
 
 ---
 
-## 📊 Quality & Code Coverage (JaCoCo)
-
-Code quality is a priority. I use **JaCoCo** to track and enforce testing standards across all modules.
-
-**Latest Coverage Summary:**
-- **Lines**: **80.1%** (483/603)
-- **Instructions**: **69.7%**
-- **Methods**: **70.7%**
-- **Branches**: **56.3%**
-
-To generate a fresh report locally:
-```bash
-./gradlew jacocoFullReport
-```
-*Report location: `build/reports/jacoco/jacocoFullReport/html/index.html`*
-
----
-
 ## 🏗 Architecture & Data Flow
 
 ### The MVI Pattern
@@ -97,13 +79,26 @@ graph TD
 
 ---
 
-## 🧪 Testing Strategy
+## 🧪 Testing & CI/CD Strategy
 
-| Category | Tools | Coverage |
-|---|---|---|
-| **Unit Tests** | JUnit 4, Mockito-Kotlin, Turbine | ViewModels, UseCases, Repositories, Mappers |
-| **Network Tests** | MockWebServer | API Serialization, Interceptors |
-| **Screenshot Tests** | Roborazzi, Robolectric | UI regression testing across themes |
+### ⚙️ Automated Pipeline (GitHub Actions)
+I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions. Every push and pull request to `main` and `develop` triggers a multi-stage workflow:
+
+| Stage | Description |
+|---|---|
+| **Code Quality** | Runs `ktlintCheck` (style) and `detekt` (static analysis) to ensure clean code. Reports are uploaded as artifacts. |
+| **Unit Tests** | Executes all JVM unit tests (`testDebugUnitTest`) to verify business logic across all modules. |
+| **Code Coverage** | Generates **JaCoCo** HTML and XML reports to monitor testing depth. |
+| **Screenshot Tests** | Uses **Roborazzi** + **Robolectric** to compare UI against baselines. Fails on any pixel diff and uploads diff PNGs for review. |
+| **Build Artifacts** | Automatically builds and uploads the **Debug APK** for immediate manual testing. |
+
+### 📊 Coverage Summary (JaCoCo)
+**Lines**: **80.1%** | **Instructions**: **69.7%** | **Methods**: **70.7%**
+
+To generate a report locally:
+```bash
+./gradlew jacocoFullReport
+```
 
 ---
 
