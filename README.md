@@ -51,7 +51,7 @@ graph TD
 
     UI -->|Intent| VM
     VM -->|invoke| UC
-    UC -->|brochures()| RI
+    UC -->|brochures| RI
     RI -.->|implements| RP
     RP -->|network-first| API
     RP -->|cache on success| LOCAL
