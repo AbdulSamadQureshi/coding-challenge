@@ -9,15 +9,15 @@ A high-performance, offline-first Android application built with **Clean Archite
 - **Multi-Module Clean Architecture**: Fully decoupled modules (`:app`, `:domain`, `:data`, `:network`, `:core`) ensuring separation of concerns and lightning-fast incremental builds.
 - **MVI (Model-View-Intent) with StateFlow**: A robust unidirectional data flow implementation using a custom `MviViewModel` base class for predictable state management and easier debugging.
 - **Offline-First Experience**: Local persistence using **Room** ensures that the app remains functional even without an internet connection.
-- **Dynamic Build Variants**: Custom `release`, `qa`, and `staging` variants with specialized ProGuard/R8 rules for production security and obfuscation testing.
-- **Meticulous UX & Scroll State**: Smooth pagination with precise scroll-position retention using `rememberSaveable`, ensuring users never lose their place when navigating back from details.
+- **Dynamic Build Variants**: Specialized `release` and `qa` variants with custom ProGuard/R8 rules for production security and obfuscation testing.
+- **Meticulous UX & Scroll State**: Smooth pagination with precise scroll-position retention using `rememberSaveable`, ensuring the user never loses their place when navigating back from details.
 - **Modern Tech Stack**: Hilt for DI, Coil 3 for image loading, Retrofit 3, and Kotlin 2.3+.
 
 ---
 
 ## 📊 Quality & Code Coverage (JaCoCo)
 
-We prioritize code quality. The project utilizes **JaCoCo** to track and enforce testing standards across all modules.
+Code quality is a priority. I use **JaCoCo** to track and enforce testing standards across all modules.
 
 **Latest Coverage Summary:**
 - **Lines**: **80.1%** (483/603)
@@ -36,7 +36,7 @@ To generate a fresh report locally:
 ## 🏗 Architecture & Data Flow
 
 ### The MVI Pattern
-Each screen follows a strict flow:
+The app follows a strict flow:
 `UI (Compose) → Intent → ViewModel → UseCase → Repository → [Network / Room]`
 
 ### Module Responsibilities
@@ -113,8 +113,7 @@ graph TD
 |---|---|---|
 | `release` | **Yes** | Production build with full R8 optimization. |
 | `qa` | **Yes** | Debuggable build with obfuscation for testing. |
-| `staging` | No | Internal development build. |
-| `debug` | - | Hidden from IDE (use `staging` for dev). |
+| `debug` | No | Standard development build. |
 
 ---
 
