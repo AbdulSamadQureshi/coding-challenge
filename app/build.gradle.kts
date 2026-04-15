@@ -141,7 +141,7 @@ configure<ApplicationExtension> {
 
     sourceSets {
         getByName("test") {
-            resources.srcDir("src/test/screenshots")
+            resources.directories.add("src/test/screenshots")
         }
     }
 }
