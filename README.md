@@ -150,7 +150,29 @@ See `.github/workflows/ci.yml`.
 | `staging` | Staging | Off | App ID suffix `.staging` |
 | `release` | Production | **On** (R8 + resource shrinking) | ProGuard rules in `proguard-rules.pro` |
 
-Environment-specific `BASE_URL` and `ENVIRONMENT` values are loaded from `.properties` files (`debug.properties`, `qa.properties`, `staging.properties`, `release.properties`).
+Environment-specific `BASE_URL` and `ENVIRONMENT` values are loaded from `.properties` files (`release.properties`, `qa.properties`, `staging.properties`).
+
+## 🚀 Highlights & Eye-Catching Features
+
+- **Multi-Module Clean Architecture**: A robust decoupled structure (`:app`, `:domain`, `:data`, `:network`, `:core`) designed for scalability and team collaboration.
+- **MVI with StateFlow**: Unidirectional data flow that makes state predictable and UI testing a breeze.
+- **Pagination & Search**: Seamlessly handles infinite scrolling with search query debouncing for a smooth user experience.
+- **Dynamic ProGuard Configuration**: Custom build variants (`release`, `qa`, `staging`) with optimized obfuscation rules to ensure production security without breaking Hilt or Kotlin Serialization.
+- **Meticulous UX**: Precise scroll-state retention using `rememberSaveable` to ensure the user never loses their place when navigating back from details.
+
+## 📊 Code Coverage (JaCoCo)
+
+We take quality seriously. The project uses JaCoCo for comprehensive coverage reporting.
+
+**Latest Coverage Summary:**
+- **Lines**: **80.1%** (483/603)
+- **Instructions**: **69.7%**
+- **Methods**: **70.7%**
+
+You can generate the full HTML report by running:
+```bash
+./gradlew jacocoFullReport
+```
 
 ## Known Trade-offs
 
