@@ -32,11 +32,21 @@ val jacocoExcludes = listOf(
     "**/*_Factory.*", "**/*_MembersInjector.*", "**/*_GeneratedInjector.*",
     "**/*Module_Provide*",
     // Room generated
-    "**/*Dao_Impl.*", "**/*_Database_Impl.*",
+    "**/*Dao_Impl*", "**/*Database_Impl*", "**/*_Impl\$*",
     // Compose generated
     "**/ComposableSingletons*.*",
     // Test helpers
     "**/*Test*.*",
+    // Hilt DI modules (hand-written but not unit-testable in isolation)
+    "**/di/*Module*", "**/di/*Component*",
+    // Compose UI screens / theme — covered by screenshot tests, not unit tests
+    "**/presentation/theme/**",
+    "**/presentation/detail/*Screen*",
+    "**/presentation/home/*Screen*",
+    "**/presentation/navigation/**",
+    "**/core/ui/**",
+    // Android entry points not unit-testable
+    "**/MainActivity*",
 )
 
 tasks.register<JacocoReport>("jacocoFullReport") {
