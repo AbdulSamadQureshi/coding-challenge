@@ -44,4 +44,11 @@ dependencies {
     ksp(libs.hilt.android.compiler)
     implementation(libs.anvil.annotations)
     implementation(libs.gson)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockwebserver)
 }
