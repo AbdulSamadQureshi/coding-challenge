@@ -66,6 +66,35 @@ graph TD
 
 ---
 
+## 🚦 Getting Started
+
+### Prerequisites
+- **Android Studio** Meerkat (2024.3.1) or newer
+- **JDK 17+**
+- **Android SDK** with API level 25–37
+
+### Clone & Run
+```bash
+git clone https://github.com/AbdulSamadQureshi/Brochure-App.git
+cd Brochure-App
+git checkout develop          # always start from develop
+./gradlew assembleDebug       # build
+./gradlew testDebugUnitTest   # run all unit tests
+./gradlew jacocoFullReport    # generate coverage report → build/reports/jacoco/
+```
+
+### Contributing
+```
+1. Branch off develop:  git checkout -b feature/your-feature
+2. Make changes & commit
+3. Open PR targeting develop
+4. CI must pass (Code Quality + Unit Tests)
+5. 1 approving review required before merge
+```
+Releases are cut by opening a `develop → main` PR. Merging it automatically builds the APK and publishes a GitHub Release.
+
+---
+
 ## 🛠 Tech Stack
 
 - **UI**: Jetpack Compose (Material 3)
@@ -82,7 +111,33 @@ graph TD
 ## 🧪 Testing & CI/CD Strategy
 
 ### ⚙️ Automated Pipeline (GitHub Actions)
-I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions. Every push and pull request to `main` and `develop` triggers a multi-stage workflow:
+I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions.
+
+#### Branch Strategy
+```
+feature/xyz  →  develop  →  main
+      PR ↗          PR ↗
+```
+
+| Branch | Protection |
+|---|---|
+| `main` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
+| `develop` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
+
+All feature branches open PRs against **`develop`**. When ready for stakeholders, a `develop → main` PR is opened and merged to produce a release.
+
+#### CI Job Triggers
+
+| Action | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
+|---|---|---|---|---|---|
+| Push to `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR opened → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR merged → `develop` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| PR opened `develop` → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR **merged** `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Direct push to `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+#### CI Job Descriptions
 
 | Stage | Description |
 |---|---|
@@ -90,7 +145,7 @@ I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml
 | **Unit Tests** | Executes all JVM unit tests (`testDebugUnitTest`) to verify business logic across all modules. |
 | **Code Coverage** | Generates **JaCoCo** HTML and XML reports to monitor testing depth. |
 | **Screenshot Tests** | Uses **Roborazzi** + **Robolectric** to compare UI against baselines. Fails on any pixel diff and uploads diff PNGs for review. |
-| **Build Artifacts** | Automatically builds and uploads the **Debug APK** for immediate manual testing. |
+| **Build & Release** | Builds the signed Debug APK, creates a **GitHub Release** with the APK attached so stakeholders can download it directly without GitHub Actions access. |
 
 ### 📊 Coverage Summary (JaCoCo)
 **Lines**: **80.1%** | **Instructions**: **69.7%** | **Methods**: **70.7%**
