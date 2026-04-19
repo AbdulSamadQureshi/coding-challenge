@@ -29,26 +29,30 @@ A production-quality Android app covering all challenge requirements plus severa
 
 ## Architecture Decisions
 
-### Why Multi-Module (Layer Modules, not Feature Modules)?
+### Why Layer Modules — and How They Relate to Feature Modules
 
-The project uses **layer modules** (`:app`, `:domain`, `:data`, `:network`, `:core`) rather than feature modules (`:feature:characters`, `:feature:favourites`) or a single module.
+The project uses **layer modules** (`:app`, `:domain`, `:data`, `:network`, `:core`). Layer modules and feature modules are not competing choices — they are different phases of the same scaleable architecture. Layer modules are the **foundation** that feature modules sit on top of.
 
 **Why not a single module?**
-A single module removes compile-time boundaries. Nothing stops a ViewModel from importing a Room DAO directly. `:domain` can accidentally grow Android dependencies. All Kotlin files recompile on every change.
+A single module removes compile-time boundaries. Nothing stops a ViewModel from importing a Room DAO directly. `:domain` can accidentally grow Android dependencies. Every Kotlin file recompiles on every change regardless of what was touched.
 
-**Why layer modules over feature modules?**
-Feature modules optimise for **team parallelism** — multiple squads owning separate vertical slices without merge conflicts. This is the right architecture for a large app with 5+ engineers.
+**What layer modules deliver:**
+- **Faster incremental builds** — Gradle only recompiles layers whose inputs changed. Touching a ViewModel recompiles only `:app`. Touching a use case recompiles `:domain` and `:app`, but not `:data` or `:network`.
+- **Hard compile-time boundaries** — `:domain` literally cannot import Android classes. `:data` cannot reach into `:app`. These are enforced by the module graph, not by convention or code review.
+- **Trivially testable domain logic** — `:domain` has zero Android dependencies, so all use cases and repository interfaces run in plain JUnit without Robolectric or an emulator.
+- **The correct foundation for feature modules** — when the app grows to 3+ features with dedicated teams, feature modules slot directly on top:
 
-This project has **two screens and one developer**. Feature modules would require duplicating the dependency graph per feature (each needs its own DI module, domain interfaces, and data sources) and would make cross-cutting concerns like `GetEnrichedCharactersUseCase` — which combines characters and favourites — awkward to place without creating a `:feature:common` module that immediately defeats the purpose.
+```
+:feature:characters ──▶  :domain  ──▶  :data  ──▶  :network
+:feature:favourites ──▶  :domain               └──▶ :core
+:feature:episodes   ──▶  :domain
+:app  (thin orchestrator: navigation + DI graph assembly)
+```
 
-Layer modules deliver the key benefit of feature modules — **enforced compile-time boundaries** — without the overhead:
-- `:domain` has zero Android dependencies; use cases and repository interfaces are pure Kotlin
-- `:data` cannot reach into `:app`; no accidental leakage of UI concerns into the data layer
-- Incremental builds stay fast — touching a ViewModel recompiles only `:app`, not `:domain` or `:data`
+The layer modules are not replaced — they become the shared infrastructure every feature module depends on. Starting with layer modules is the correct first step toward this structure.
 
-**Migration path if the app grows:** keep the layer modules as shared infrastructure and add feature modules on top (`:feature:characters`, `:feature:favourites`) that depend on `:domain` and `:core` but not on each other.
-
-**Alternative considered:** Feature modules with a shared `:feature:common`. Rejected because `:feature:common` would immediately become a catch-all module indistinguishable from `:domain`, duplicating the layered structure without adding team isolation benefits.
+**Why not jump straight to feature modules now?**
+Feature modules require each vertical slice to carry its own DI module, domain interfaces, and data sources. Cross-cutting use cases like `GetEnrichedCharactersUseCase` — which combines the character list with the favourites state — have no natural home in a feature module without creating a `:feature:common` that immediately becomes a second `:domain`. The layer structure handles cross-cutting concerns cleanly by design.
 
 ---
 

@@ -187,18 +187,25 @@ MVI enforces a **single immutable state object** and a **single update path** (`
 
 The custom `MviViewModel<S, I, E>` base class in `:core` is intentionally thin — it provides the channel/flow wiring but imposes no constraint on how `handleIntent()` is implemented, so coroutine-based async work fits naturally.
 
-### Why layer modules instead of feature modules?
+### Why layer modules over feature modules?
 
-Feature modules (`:feature:characters`, `:feature:favourites`) optimise for team parallelism — multiple squads can own separate vertical slices without merge conflicts. This is the right call for a large app with 5+ engineers.
+Layer modules (`:app`, `:domain`, `:data`, `:network`, `:core`) and feature modules (`:feature:characters`, `:feature:favourites`) are not mutually exclusive — they are different phases of the same scaleable architecture. Layer modules are the **foundation** that feature modules build on top of.
 
-This is a **two-screen app built by one developer**. Feature modules would require duplicating the dependency graph (each feature needs its own DI module, domain interfaces, and data sources) and would make cross-cutting concerns like `GetEnrichedCharactersUseCase` — which combines characters and favourites — awkward to place without a shared `:feature:common` module that immediately defeats the purpose.
+Layer modules deliver:
+- **Faster incremental builds** — Gradle only recompiles the layers whose inputs changed. Touching a ViewModel recompiles `:app` only; touching a use case recompiles `:domain` and `:app`, but not `:data` or `:network`.
+- **Hard compile-time boundaries** — `:domain` literally cannot import Android classes. `:data` cannot reach into `:app`. These are enforced by the module graph, not by convention.
+- **Trivially testable domain logic** — `:domain` has zero Android dependencies, so use cases and repository interfaces run in plain JUnit without Robolectric or an emulator.
 
-Layer modules give the key benefit — **enforced compile-time boundaries** — without the overhead:
-- `:domain` has zero Android dependencies and is trivially testable
-- `:data` cannot reach into `:app`; no accidental UI-concern leakage
-- Gradle only recompiles the layers whose inputs changed
+When the app grows to 3+ features with dedicated teams, feature modules slot in on top of the existing layer structure:
 
-**Migration path if the app grows:** keep the layer modules as shared infrastructure and add feature modules on top (`:feature:characters`, `:feature:favourites`) that depend on `:domain` and `:core` but not on each other.
+```
+:feature:characters ──▶  :domain  ──▶  :data  ──▶  :network
+:feature:favourites ──▶  :domain               └──▶ :core
+:feature:episodes   ──▶  :domain
+:app  (thin orchestrator: navigation + DI graph assembly)
+```
+
+The layer modules are not replaced — they become the shared infrastructure every feature module depends on. Starting with layer modules is the correct first step toward this structure.
 
 ### Search + Pagination concurrency
 
@@ -232,7 +239,7 @@ When page 2+ fails, the loaded list is preserved and a sticky **"Failed to load 
 |---|---|---|---|
 | **Pagination** | Manual scroll-threshold | Paging 3 | Paging 3 adds significant complexity (PagingSource, RemoteMediator, PagingData adapter) that is only justified for large datasets or multi-source pagination. A single API with simple append semantics does not need it. |
 | **State management** | MVI (single state + intents) | Plain MVVM (multiple StateFlows) | MVI prevents inconsistent UI state combinations when multiple async operations touch overlapping fields. |
-| **Module structure** | Layer modules | Feature modules | Feature modules are optimised for team parallelism which is irrelevant for a solo two-screen project. |
+| **Module structure** | Layer modules as the base | Feature modules added on top as the app grows | Layer modules are the correct foundation — they enforce compile-time boundaries and faster incremental builds today, and become the shared infrastructure that feature modules depend on when the team scales. |
 | **Offline list cache** | In-memory StateFlow | Room persistence | Full list persistence would require a TTL strategy and cache invalidation logic. In-memory cache covers the app session; favourites are always persisted. |
 | **Favourite PK** | Image URL | Character ID | URL-based PK survives API schema changes and works across any character source without coupling to Rick & Morty's ID scheme. |
 | **Share text** | ViewModel use-case | Compose/UI layer | Keeps pure Kotlin logic fully unit-testable without an Android context. |
