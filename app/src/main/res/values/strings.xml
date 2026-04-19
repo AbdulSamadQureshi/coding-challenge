@@ -10,7 +10,8 @@
     <string name="label_share">Share</string>
     <string name="hint_search">Search characters…</string>
     <string name="empty_state_title">No characters yet</string>
-    <string name="empty_state_subtitle">Pull down to refresh</string>
+    <string name="empty_state_subtitle">Tap retry to load characters</string>
+    <string name="pagination_error_retry">Failed to load more. Tap to retry.</string>
     <string name="empty_search_title">No results found</string>
     <string name="empty_search_subtitle">Try a different search term</string>
     <string name="content_desc_clear_search">Clear search</string>

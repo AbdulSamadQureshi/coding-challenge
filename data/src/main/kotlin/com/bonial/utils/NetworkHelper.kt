@@ -2,6 +2,7 @@ package com.bonial.utils
 
 import com.bonial.domain.model.network.response.ApiError
 import com.bonial.domain.model.network.response.Request
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,12 @@ inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<R
         try {
             val result = withRetry { apiCall() }
             emit(Request.Success(result))
+        } catch (e: CancellationException) {
+            // Never swallow coroutine cancellation — always let it propagate so the
+            // structured concurrency contract is upheld. Swallowing it would convert
+            // a deliberate job cancellation (e.g. paginationJob.cancel()) into a
+            // spurious Request.Error event in the UI.
+            throw e
         } catch (throwable: Throwable) {
             emit(Request.Error(manageThrowable(throwable)))
         }

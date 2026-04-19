@@ -25,6 +25,7 @@ data class CharactersState(
     val isLoading: Boolean = false,
     val isLoadingNextPage: Boolean = false,
     val error: String? = null,
+    val paginationError: String? = null,
     val currentPage: Int = 1,
     val totalPages: Int = 1,
     val searchQuery: String = "",
@@ -45,11 +46,8 @@ sealed class CharactersIntent {
     ) : CharactersIntent()
 }
 
-sealed class CharactersEffect {
-    data class ShowError(
-        val message: String,
-    ) : CharactersEffect()
-}
+// No one-shot effects on the list screen — errors and empty states are part of persistent state.
+sealed class CharactersEffect
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -90,6 +88,7 @@ class CharactersViewModel
                     val state = uiState.value
                     // Guard: skip if initial load is still running OR we're already on the last page.
                     if (!state.isLoading && !state.isLoadingNextPage && state.currentPage < state.totalPages) {
+                        setState { copy(paginationError = null) }
                         loadNextPage(
                             page = state.currentPage + 1,
                             query = state.searchQuery,
@@ -161,14 +160,13 @@ class CharactersViewModel
             page: Int,
         ) {
             when (response) {
-                is Request.Loading -> {
+                is Request.Loading ->
                     setState {
                         copy(
                             isLoading = if (isNextPage) isLoading else true,
                             isLoadingNextPage = isNextPage,
                         )
                     }
-                }
                 is Request.Success -> {
                     val newItems =
                         response.data.characters.map { character ->
@@ -189,27 +187,36 @@ class CharactersViewModel
                             currentPage = page,
                             totalPages = response.data.totalPages,
                             error = null,
+                            paginationError = null,
                             isInitialLoading = false,
                         )
                     }
                 }
-                is Request.Error -> {
-                    val isNoResults = response.apiError?.code == "404"
-                    val message = response.apiError.toErrorMessage()
+                is Request.Error -> handleError(response, isNextPage)
+            }
+        }
 
-                    setState {
-                        copy(
-                            characters = if (!isNextPage && isNoResults) emptyList() else characters,
-                            isLoading = false,
-                            isLoadingNextPage = false,
-                            error = if (isNoResults) null else message,
-                            isInitialLoading = false,
-                        )
-                    }
+        private fun handleError(
+            response: Request.Error,
+            isNextPage: Boolean,
+        ) {
+            val isNoResults = response.apiError?.code == "404"
+            val message = response.apiError.toErrorMessage()
 
-                    if (!isNoResults) {
-                        setEffect { CharactersEffect.ShowError(message) }
-                    }
+            if (isNextPage && !isNoResults) {
+                // Pagination failure — preserve the loaded list and show a
+                // sticky retry banner in the grid footer.
+                setState { copy(isLoadingNextPage = false, paginationError = message) }
+            } else {
+                setState {
+                    copy(
+                        characters = if (!isNextPage && isNoResults) emptyList() else characters,
+                        isLoading = false,
+                        isLoadingNextPage = false,
+                        error = if (isNoResults) null else message,
+                        paginationError = null,
+                        isInitialLoading = false,
+                    )
                 }
             }
         }

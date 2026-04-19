@@ -57,6 +57,13 @@ class CharacterDetailViewModel
          */
         private var loadJob: Job? = null
 
+        /**
+         * Tracks the Room favourite observer so it can be cancelled and replaced when
+         * [loadCharacter] is retried. Without this, each retry would accumulate an
+         * extra observer for the lifetime of the ViewModel.
+         */
+        private var favouriteJob: Job? = null
+
         override fun createInitialState(): CharacterDetailState = CharacterDetailState()
 
         init {
@@ -111,11 +118,13 @@ class CharacterDetailViewModel
         }
 
         private fun observeFavourite(imageUrl: String) {
-            viewModelScope.launch {
-                isFavouriteFlowUseCase(imageUrl).collectLatest { isFav ->
-                    setState { copy(isFavourite = isFav) }
+            favouriteJob?.cancel()
+            favouriteJob =
+                viewModelScope.launch {
+                    isFavouriteFlowUseCase(imageUrl).collectLatest { isFav ->
+                        setState { copy(isFavourite = isFav) }
+                    }
                 }
-            }
         }
 
         /**

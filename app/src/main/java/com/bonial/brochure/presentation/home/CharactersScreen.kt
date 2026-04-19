@@ -41,9 +41,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -69,10 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
@@ -101,9 +97,6 @@ fun CharactersScreen(
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val lifecycleOwner = LocalLifecycleOwner.current
-
     val shouldLoadMore by remember(lazyGridState) {
         derivedStateOf {
             val lastVisible =
@@ -121,23 +114,11 @@ fun CharactersScreen(
         if (shouldLoadMore) viewModel.sendIntent(CharactersIntent.LoadNextPage)
     }
 
-    LaunchedEffect(viewModel.effect, lifecycleOwner) {
-        viewModel.effect
-            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-            .collect { effect ->
-                when (effect) {
-                    is CharactersEffect.ShowError ->
-                        snackbarHostState.showSnackbar(effect.message)
-                }
-            }
-    }
-
     Scaffold(
         modifier =
             Modifier
                 .fillMaxSize()
                 .testTag("characters_screen"),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize()) {
@@ -219,6 +200,10 @@ fun CharactersScreen(
                                 viewModel.sendIntent(CharactersIntent.ToggleFavourite(character))
                             },
                             bottomPadding = innerPadding.calculateBottomPadding(),
+                            paginationError = state.paginationError,
+                            onRetryNextPage = {
+                                viewModel.sendIntent(CharactersIntent.LoadNextPage)
+                            },
                         )
                 }
             }
@@ -305,6 +290,8 @@ fun CharactersGrid(
     onFavouriteClick: (CharacterUi) -> Unit,
     modifier: Modifier = Modifier,
     bottomPadding: Dp = 0.dp,
+    paginationError: String? = null,
+    onRetryNextPage: () -> Unit = {},
 ) {
     val configuration = LocalConfiguration.current
     val columns = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) GRID_COLUMNS_LANDSCAPE else GRID_COLUMNS_PORTRAIT
@@ -349,6 +336,25 @@ fun CharactersGrid(
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(LOADING_INDICATOR_SIZE.dp))
+                }
+            }
+        }
+
+        if (paginationError != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TextButton(
+                    onClick = onRetryNextPage,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = GRID_SPACING.dp)
+                            .testTag("pagination_error_retry"),
+                ) {
+                    Text(
+                        text = stringResource(R.string.pagination_error_retry),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
         }

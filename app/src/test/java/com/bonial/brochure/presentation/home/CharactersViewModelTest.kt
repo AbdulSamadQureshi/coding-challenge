@@ -78,7 +78,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `api error sets error state and emits ShowError effect`() =
+    fun `api error sets error state and clears loading`() =
         runTest {
             val errorFlow = flowOf(Request.Error(ApiError("500", "Server exploded")))
             whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
@@ -86,13 +86,16 @@ class CharactersViewModelTest {
 
             val vm = viewModel()
 
-            vm.effect.test {
-                val effect = awaitItem() as CharactersEffect.ShowError
-                assertThat(effect.message).isEqualTo("Server exploded")
+            // Full-screen errors go into state.error (persistent), not into the effect channel
+            // (which is reserved for one-shot events like share sheets and toasts).
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.isLoading || state.isInitialLoading) state = awaitItem()
+
+                assertThat(state.error).isEqualTo("Server exploded")
+                assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
-            assertThat(vm.uiState.value.error).isEqualTo("Server exploded")
-            assertThat(vm.uiState.value.isLoading).isFalse()
         }
 
     // ─── search / debounce ────────────────────────────────────────────────────
@@ -305,6 +308,63 @@ class CharactersViewModelTest {
 
                 // Only the search result must be present; page-2 characters must not appear.
                 assertThat(state.characters.map(CharacterUi::name)).containsExactly("Summer")
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // ─── error state distinctions ─────────────────────────────────────────────
+
+    @Test
+    fun `404 response is treated as empty results, not an error`() =
+        runTest {
+            val notFoundFlow = flowOf(Request.Error(ApiError("404", "Not found.")))
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(notFoundFlow)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(1, ""))).thenReturn(notFoundFlow)
+
+            val vm = viewModel()
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.isLoading || state.isInitialLoading) state = awaitItem()
+
+                // 404 must never populate the error field (it means "no results").
+                assertThat(state.error).isNull()
+                assertThat(state.characters).isEmpty()
+                assertThat(state.isInitialLoading).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `pagination failure sets paginationError, preserves loaded list, and leaves error null`() =
+        runTest {
+            val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 2)
+            stubInitialLoad(firstPage)
+            whenever(getEnrichedCharactersUseCase(CharactersParams(2, "")))
+                .thenReturn(flowOf(Request.Error(ApiError("500", "Server error"))))
+
+            val vm = viewModel()
+
+            // Wait for page 1.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.characters.isEmpty() || state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            vm.sendIntent(CharactersIntent.LoadNextPage)
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.isLoadingNextPage || (state.paginationError == null && state.characters.size < 2)) {
+                    state = awaitItem()
+                }
+
+                // Pagination failure must NOT clear the existing list.
+                assertThat(state.characters).hasSize(2)
+                // Failure goes to paginationError, not to the full-screen error field.
+                assertThat(state.paginationError).isNotNull()
+                assertThat(state.error).isNull()
                 cancelAndIgnoreRemainingEvents()
             }
         }

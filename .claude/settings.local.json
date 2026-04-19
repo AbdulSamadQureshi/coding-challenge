@@ -25,7 +25,13 @@
       "Bash(./gradlew :domain:compileDebugKotlin :data:compileDebugKotlin :app:kspDebugKotlin)",
       "Bash(./gradlew :domain:compileDebugKotlin :data:compileDebugKotlin)",
       "Bash(./gradlew testDebugUnitTest)",
-      "Bash(./gradlew :domain:compileDebugUnitTestKotlin)"
+      "Bash(./gradlew :domain:compileDebugUnitTestKotlin)",
+      "Bash(gh pr create --base develop --head feature/docs-ci-branching-strategy --title 'docs: add Getting Started section to README and SOLUTION' --body ' *)",
+      "Bash(gh pr create --base develop --head feature/auto-delete-merged-branches --title 'ci: auto-delete feature branches after PR merge' --body ' *)",
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh api *)",
+      "Bash(./gradlew :app:compileDebugKotlin)"
     ]
   }
 }

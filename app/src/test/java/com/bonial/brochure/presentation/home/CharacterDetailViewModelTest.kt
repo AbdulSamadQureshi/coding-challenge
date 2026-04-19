@@ -13,6 +13,7 @@ import com.bonial.domain.useCase.favourites.ToggleFavouriteUseCase
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -142,6 +143,43 @@ class CharacterDetailViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
 
+            verify(characterDetailUseCase, times(2)).invoke(CHARACTER_ID)
+        }
+
+    @Test
+    fun `Retry cancels any stale in-flight load so only the fresh response reaches state`() =
+        runTest {
+            // First call returns a flow that emits Loading but never completes (simulates
+            // a slow network). Second call (triggered by Retry) resolves immediately.
+            val neverCompletes = flow<Request<CharacterDetail>> { emit(Request.Loading) }
+            whenever(characterDetailUseCase(CHARACTER_ID))
+                .thenReturn(neverCompletes)
+                .thenReturn(flowOf(Request.Success(characterDetail())))
+            whenever(isFavouriteFlowUseCase(IMAGE_URL)).thenReturn(MutableStateFlow(false))
+
+            val vm = viewModel()
+
+            // Confirm the ViewModel is stuck in the loading state from the hanging flow.
+            vm.uiState.test {
+                var state = awaitItem()
+                while (!state.isLoading) state = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Retry must cancel the in-flight job and start fresh.
+            vm.sendIntent(CharacterDetailIntent.Retry)
+
+            vm.uiState.test {
+                var state = awaitItem()
+                while (state.isLoading || state.character == null) state = awaitItem()
+
+                // Only the second (successful) response should appear — not the stale Loading.
+                assertThat(state.character.id).isEqualTo(CHARACTER_ID)
+                assertThat(state.error).isNull()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Use case was called exactly twice: initial load + retry.
             verify(characterDetailUseCase, times(2)).invoke(CHARACTER_ID)
         }
 
