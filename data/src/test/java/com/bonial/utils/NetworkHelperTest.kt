@@ -48,6 +48,7 @@ class NetworkHelperTest {
         }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `safeApiCall should emit Loading then Error when api call throws unknown Exception`() =
         runBlocking {
             val flow = safeApiCall<String> { throw RuntimeException("Unknown error") }
