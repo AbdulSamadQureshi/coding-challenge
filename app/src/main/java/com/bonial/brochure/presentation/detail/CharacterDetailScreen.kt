@@ -61,12 +61,14 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.placeholder
 import com.bonial.brochure.R
+import androidx.compose.ui.tooling.preview.Preview
 import com.bonial.brochure.presentation.home.CharacterDetailEffect
 import com.bonial.brochure.presentation.home.CharacterDetailIntent
 import com.bonial.brochure.presentation.home.CharacterDetailViewModel
 import com.bonial.brochure.presentation.home.ErrorMessage
 import com.bonial.brochure.presentation.home.ImageErrorPlaceholder
 import com.bonial.brochure.presentation.model.CharacterDetailUi
+import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import com.bonial.brochure.presentation.theme.toStatusColorSet
 import com.bonial.core.ui.extensions.shimmerEffect
 
@@ -174,7 +176,7 @@ fun CharacterDetailScreen(
  * layout shift when content arrives.
  */
 @Composable
-private fun CharacterDetailShimmer() {
+internal fun CharacterDetailShimmer() {
     Column(
         modifier =
             Modifier
@@ -221,7 +223,7 @@ private fun CharacterDetailShimmer() {
 }
 
 @Composable
-private fun CharacterDetailContent(character: CharacterDetailUi) {
+internal fun CharacterDetailContent(character: CharacterDetailUi) {
     var imageLoaded by remember { mutableStateOf(false) }
     var imageError by remember { mutableStateOf(false) }
     var contentVisible by remember { mutableStateOf(false) }
@@ -411,3 +413,44 @@ private const val DETAIL_ROW_VERTICAL_PADDING = 10
 private const val DETAIL_ROW_LABEL_FONT_SIZE = 14
 private const val DETAIL_ROW_VALUE_FONT_SIZE = 14
 private const val DIVIDER_ALPHA = 0.5f
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(name = "CharacterDetail – shimmer/loading", showBackground = true)
+@Composable
+private fun PreviewCharacterDetailShimmer() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        CharacterDetailShimmer()
+    }
+}
+
+@Preview(name = "CharacterDetail – content", showBackground = true)
+@Composable
+private fun PreviewCharacterDetailContent() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        CharacterDetailContent(
+            character =
+                CharacterDetailUi(
+                    id = 1,
+                    name = "Rick Sanchez",
+                    status = "Alive",
+                    species = "Human",
+                    gender = "Male",
+                    origin = "Earth (C-137)",
+                    location = "Citadel of Ricks",
+                    imageUrl = null,
+                ),
+        )
+    }
+}
+
+@Preview(name = "CharacterDetail – error", showBackground = true)
+@Composable
+private fun PreviewCharacterDetailError() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        ErrorMessage(
+            message = "The server is having trouble right now. Please try again later.",
+            onRetry = {},
+        )
+    }
+}

@@ -65,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,6 +77,7 @@ import coil3.request.crossfade
 import coil3.request.placeholder
 import com.bonial.brochure.R
 import com.bonial.brochure.presentation.model.CharacterUi
+import com.bonial.brochure.presentation.theme.CloseLoopWalletTheme
 import com.bonial.brochure.presentation.theme.toStatusColorSet
 import com.bonial.core.ui.extensions.shimmerEffect
 
@@ -648,3 +650,66 @@ private const val LOADING_INDICATOR_SIZE = 32
 private const val CARD_PADDING = 8
 private const val GRID_COLUMNS_LANDSCAPE = 3
 private const val GRID_COLUMNS_PORTRAIT = 2
+
+// ─── Previews ────────────────────────────────────────────────────────────────
+
+@Preview(name = "CharacterItem – default", showBackground = true)
+@Composable
+private fun PreviewCharacterItemDefault() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        CharacterItem(
+            name = "Rick Sanchez",
+            status = "Alive",
+            imageUrl = null,
+            isFavourite = false,
+        )
+    }
+}
+
+@Preview(name = "CharacterItem – favourite", showBackground = true)
+@Composable
+private fun PreviewCharacterItemFavourite() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        CharacterItem(
+            name = "Morty Smith",
+            status = "Dead",
+            imageUrl = null,
+            isFavourite = true,
+        )
+    }
+}
+
+@Preview(name = "EmptyState", showBackground = true)
+@Composable
+private fun PreviewEmptyState() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        EmptyState()
+    }
+}
+
+@Preview(name = "EmptySearchState", showBackground = true)
+@Composable
+private fun PreviewEmptySearchState() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        EmptySearchState(query = "Pickle Rick")
+    }
+}
+
+@Preview(name = "ErrorMessage – with retry", showBackground = true)
+@Composable
+private fun PreviewErrorMessage() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        ErrorMessage(
+            message = "The server is having trouble right now. Please try again later.",
+            onRetry = {},
+        )
+    }
+}
+
+@Preview(name = "CharactersLoadingGrid", showBackground = true)
+@Composable
+private fun PreviewCharactersLoadingGrid() {
+    CloseLoopWalletTheme(dynamicColor = false) {
+        CharactersLoadingGrid()
+    }
+}
