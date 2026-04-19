@@ -82,7 +82,33 @@ graph TD
 ## 🧪 Testing & CI/CD Strategy
 
 ### ⚙️ Automated Pipeline (GitHub Actions)
-I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions. Every push and pull request to `main` and `develop` triggers a multi-stage workflow:
+I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions.
+
+#### Branch Strategy
+```
+feature/xyz  →  develop  →  main
+      PR ↗          PR ↗
+```
+
+| Branch | Protection |
+|---|---|
+| `main` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
+| `develop` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
+
+All feature branches open PRs against **`develop`**. When ready for stakeholders, a `develop → main` PR is opened and merged to produce a release.
+
+#### CI Job Triggers
+
+| Action | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
+|---|---|---|---|---|---|
+| Push to `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR opened → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR merged → `develop` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| PR opened `develop` → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| PR **merged** `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Direct push to `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+#### CI Job Descriptions
 
 | Stage | Description |
 |---|---|
@@ -90,7 +116,7 @@ I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml
 | **Unit Tests** | Executes all JVM unit tests (`testDebugUnitTest`) to verify business logic across all modules. |
 | **Code Coverage** | Generates **JaCoCo** HTML and XML reports to monitor testing depth. |
 | **Screenshot Tests** | Uses **Roborazzi** + **Robolectric** to compare UI against baselines. Fails on any pixel diff and uploads diff PNGs for review. |
-| **Build Artifacts** | Automatically builds and uploads the **Debug APK** for immediate manual testing. |
+| **Build & Release** | Builds the signed Debug APK, creates a **GitHub Release** with the APK attached so stakeholders can download it directly without GitHub Actions access. |
 
 ### 📊 Coverage Summary (JaCoCo)
 **Lines**: **80.1%** | **Instructions**: **69.7%** | **Methods**: **70.7%**
