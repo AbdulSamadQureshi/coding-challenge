@@ -66,6 +66,35 @@ graph TD
 
 ---
 
+## 🚦 Getting Started
+
+### Prerequisites
+- **Android Studio** Meerkat (2024.3.1) or newer
+- **JDK 17+**
+- **Android SDK** with API level 25–37
+
+### Clone & Run
+```bash
+git clone https://github.com/AbdulSamadQureshi/Brochure-App.git
+cd Brochure-App
+git checkout develop          # always start from develop
+./gradlew assembleDebug       # build
+./gradlew testDebugUnitTest   # run all unit tests
+./gradlew jacocoFullReport    # generate coverage report → build/reports/jacoco/
+```
+
+### Contributing
+```
+1. Branch off develop:  git checkout -b feature/your-feature
+2. Make changes & commit
+3. Open PR targeting develop
+4. CI must pass (Code Quality + Unit Tests)
+5. 1 approving review required before merge
+```
+Releases are cut by opening a `develop → main` PR. Merging it automatically builds the APK and publishes a GitHub Release.
+
+---
+
 ## 🛠 Tech Stack
 
 - **UI**: Jetpack Compose (Material 3)
