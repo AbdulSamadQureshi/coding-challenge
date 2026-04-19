@@ -160,14 +160,13 @@ class CharactersViewModel
             page: Int,
         ) {
             when (response) {
-                is Request.Loading -> {
+                is Request.Loading ->
                     setState {
                         copy(
                             isLoading = if (isNextPage) isLoading else true,
                             isLoadingNextPage = isNextPage,
                         )
                     }
-                }
                 is Request.Success -> {
                     val newItems =
                         response.data.characters.map { character ->
@@ -193,31 +192,31 @@ class CharactersViewModel
                         )
                     }
                 }
-                is Request.Error -> {
-                    val isNoResults = response.apiError?.code == "404"
-                    val message = response.apiError.toErrorMessage()
+                is Request.Error -> handleError(response, isNextPage)
+            }
+        }
 
-                    if (isNextPage && !isNoResults) {
-                        // Pagination failure — preserve the loaded list and show a
-                        // sticky retry banner in the grid footer instead of a snackbar.
-                        setState {
-                            copy(
-                                isLoadingNextPage = false,
-                                paginationError = message,
-                            )
-                        }
-                    } else {
-                        setState {
-                            copy(
-                                characters = if (!isNextPage && isNoResults) emptyList() else characters,
-                                isLoading = false,
-                                isLoadingNextPage = false,
-                                error = if (isNoResults) null else message,
-                                paginationError = null,
-                                isInitialLoading = false,
-                            )
-                        }
-                    }
+        private fun handleError(
+            response: Request.Error,
+            isNextPage: Boolean,
+        ) {
+            val isNoResults = response.apiError?.code == "404"
+            val message = response.apiError.toErrorMessage()
+
+            if (isNextPage && !isNoResults) {
+                // Pagination failure — preserve the loaded list and show a
+                // sticky retry banner in the grid footer.
+                setState { copy(isLoadingNextPage = false, paginationError = message) }
+            } else {
+                setState {
+                    copy(
+                        characters = if (!isNextPage && isNoResults) emptyList() else characters,
+                        isLoading = false,
+                        isLoadingNextPage = false,
+                        error = if (isNoResults) null else message,
+                        paginationError = null,
+                        isInitialLoading = false,
+                    )
                 }
             }
         }

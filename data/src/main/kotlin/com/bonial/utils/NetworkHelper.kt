@@ -48,12 +48,13 @@ inline fun <reified T> safeApiCall(crossinline apiCall: suspend () -> T): Flow<R
         try {
             val result = withRetry { apiCall() }
             emit(Request.Success(result))
-        } catch (throwable: Throwable) {
+        } catch (e: CancellationException) {
             // Never swallow coroutine cancellation — always let it propagate so the
             // structured concurrency contract is upheld. Swallowing it would convert
             // a deliberate job cancellation (e.g. paginationJob.cancel()) into a
             // spurious Request.Error event in the UI.
-            if (throwable is CancellationException) throw throwable
+            throw e
+        } catch (throwable: Throwable) {
             emit(Request.Error(manageThrowable(throwable)))
         }
     }.flowOn(Dispatchers.IO)
