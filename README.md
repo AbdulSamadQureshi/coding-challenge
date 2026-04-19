@@ -1,4 +1,4 @@
-# Bonial Coding Challenge — Rick & Morty Browser
+# Coding Challenge — Rick & Morty Browser
 
 A production-quality Android application built with **Clean Architecture**, **MVI**, and **Jetpack Compose**. The app browses Rick & Morty characters with live search, infinite pagination, offline-persisted favourites, and a full CI/CD pipeline.
 
@@ -342,8 +342,8 @@ The current pipeline runs all jobs sequentially per PR. As the team grows:
 
 ### Clone & Run
 ```bash
-git clone https://github.com/AbdulSamadQureshi/Brochure-App.git
-cd Brochure-App
+git clone https://github.com/AbdulSamadQureshi/coding-challenge.git
+cd coding-challenge
 git checkout develop           # always work from develop
 ./gradlew assembleDebug        # build debug APK
 ```

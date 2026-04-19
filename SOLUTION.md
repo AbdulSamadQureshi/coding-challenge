@@ -1,4 +1,4 @@
-# Solution Notes — Bonial Coding Challenge
+# Solution Notes — Coding Challenge
 
 This document is a reviewer guide explaining the architectural decisions, per-screen implementation choices, trade-offs considered, and strategies for extending and scaling the solution. It is intended to be read alongside the code.
 
@@ -383,7 +383,7 @@ The Build & Release job creates a GitHub Release tagged `build-{run_number}` wit
 ## Project Structure
 
 ```
-BonialCodingChallenge/
+CodingChallenge/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml                        # Code quality, tests, coverage, screenshots, release
