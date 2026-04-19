@@ -166,6 +166,8 @@ jobs:
   build:
     name: Build & Release Debug APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required by softprops/action-gh-release to create releases & upload assets
     if: >
       github.event_name == 'pull_request' &&
       github.event.pull_request.merged == true &&
