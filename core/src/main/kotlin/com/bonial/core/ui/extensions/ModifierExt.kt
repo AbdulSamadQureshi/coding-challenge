@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.IntSize
 
 private const val SHIMMER_OFFSET_MULTIPLIER = 2f
 private const val SHIMMER_DURATION = 1200
+private const val SHIMMER_COLOR_LIGHT = 0xFFEBEBEB
+private const val SHIMMER_COLOR_DARK = 0xFFD6D6D6
 
 fun Modifier.shimmerEffect(): Modifier =
     composed {
@@ -40,9 +42,9 @@ fun Modifier.shimmerEffect(): Modifier =
                 Brush.linearGradient(
                     colors =
                         listOf(
-                            Color(0xFFEBEBEB),
-                            Color(0xFFD6D6D6),
-                            Color(0xFFEBEBEB),
+                            Color(SHIMMER_COLOR_LIGHT),
+                            Color(SHIMMER_COLOR_DARK),
+                            Color(SHIMMER_COLOR_LIGHT),
                         ),
                     start = Offset(startOffsetX, 0f),
                     end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat()),

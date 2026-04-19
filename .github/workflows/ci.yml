@@ -159,6 +159,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode debug keystore
+        run: |
+          mkdir -p KeyStores
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > KeyStores/debugKeystore.jks
+
+      - name: Write keystore.debug.properties
+        run: |
+          cat > keystore.debug.properties <<EOF
+          storeFile=../KeyStores/debugKeystore.jks
+          storePassword=${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.DEBUG_KEY_ALIAS }}
+          keyPassword=${{ secrets.DEBUG_KEY_PASSWORD }}
+          EOF
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
