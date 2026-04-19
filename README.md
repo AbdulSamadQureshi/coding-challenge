@@ -1,55 +1,76 @@
-# Bonial Coding Challenge — Rick & Morty Browser 🪐
+# Bonial Coding Challenge — Rick & Morty Browser
 
-A high-performance, offline-first Android application built with **Clean Architecture**, **MVI**, and the latest **Jetpack Compose** components. This project showcases modern Android development best practices, including a multi-module setup, robust pagination, and comprehensive test coverage.
-
----
-
-## 🚀 Key Highlights & "Eye-Catching" Features
-
-- **Multi-Module Clean Architecture**: Fully decoupled modules (`:app`, `:domain`, `:data`, `:network`, `:core`) ensuring separation of concerns and lightning-fast incremental builds.
-- **MVI (Model-View-Intent) with StateFlow**: A robust unidirectional data flow implementation using a custom `MviViewModel` base class for predictable state management and easier debugging.
-- **Offline-First Experience**: Local persistence using **Room** ensures that the app remains functional even without an internet connection.
-- **Dynamic Build Variants**: Specialized `release` and `qa` variants with custom ProGuard/R8 rules for production security and obfuscation testing.
-- **Meticulous UX & Scroll State**: Smooth pagination with precise scroll-position retention using `rememberSaveable`, ensuring the user never loses their place when navigating back from details.
-- **Modern Tech Stack**: Hilt for DI, Coil 3 for image loading, Retrofit 3, and Kotlin 2.3+.
+A production-quality Android application built with **Clean Architecture**, **MVI**, and **Jetpack Compose**. The app browses Rick & Morty characters with live search, infinite pagination, offline-persisted favourites, and a full CI/CD pipeline.
 
 ---
 
-## 🏗 Architecture & Data Flow
+## Features
 
-### The MVI Pattern
-The app follows a strict flow:
-`UI (Compose) → Intent → ViewModel → UseCase → Repository → [Network / Room]`
+| Feature | Detail |
+|---|---|
+| **Character list** | Infinite-scroll grid loaded from the Rick & Morty API |
+| **Live search** | 1-second debounce, API-side filtering via `?name=` query param |
+| **Pagination** | Append-on-scroll; triggers when 4 items from the end of the list |
+| **Favourites** | Persisted in Room DB; synced in real time across list and detail screens |
+| **Character detail** | Full info screen with species, status, origin, episode count |
+| **Share** | Android share-sheet with formatted character card text |
+| **Offline support** | Favourites survive network loss via Room; list served from in-memory StateFlow cache |
+| **Error & retry** | Human-readable error messages; one-tap retry fires immediately without debounce |
+| **Shimmer loading** | Skeleton shimmer on initial load and pagination |
 
-### Module Responsibilities
+---
+
+## Architecture
+
+### Multi-Module Clean Architecture
+
+```
+:app  ──▶  :domain  ──▶  :data  ──▶  :network
+ │             │
+ └──▶  :core ◀─┘
+```
+
 | Module | Responsibility |
 |---|---|
-| **`:app`** | Presentation: Compose UI, ViewModels, MVI State, Theme |
-| **`:domain`** | Pure Business Logic: UseCases (Enrichment, Sharing), Repository Interfaces |
-| **`:data`** | Data Access: Repository Impls, Room DB, Local Data Sources |
-| **`:network`** | Infrastructure: Retrofit 3, OkHttp 5, API Services, JSON DTOs |
-| **`:core`** | Shared: Base MVI classes, SharedPreferences, UI Extensions |
+| **`:app`** | Compose UI, ViewModels, MVI State/Intent/Effect, Navigation, Theme |
+| **`:domain`** | Use cases, repository interfaces, domain models — zero Android dependencies |
+| **`:data`** | Repository implementations, Room DB, DAOs, mappers, NetworkHelper |
+| **`:network`** | Retrofit 3 + OkHttp 5 client, token caching, logging interceptor |
+| **`:core`** | `MviViewModel` base class, SharedPreferences, shimmer Modifier extension |
 
-### Mermaid Data Flow
+### MVI Pattern
+
+Every screen follows strict unidirectional data flow:
+
+```
+UI (Compose)  ──Intent──▶  ViewModel  ──UseCase──▶  Repository  ──▶  [API / Room]
+     ▲                          │
+     └────State / Effect────────┘
+```
+
+**`MviViewModel<S, I, E>`** (`:core`)
+- **State** — `MutableStateFlow<S>` updated via `setState { reduce() }`
+- **Intent** — buffered `Channel<I>` (capacity 64); dispatched by `handleIntent()`
+- **Effect** — conflated `Channel<E>` for one-time events (navigation, share sheet, toast)
+
+### Data Flow Diagram
+
 ```mermaid
 graph TD
-    subgraph ":app (Presentation)"
+    subgraph ":app"
         UI[Compose UI]
         VM[CharactersViewModel]
     end
-
-    subgraph ":domain (Business Logic)"
+    subgraph ":domain"
         UC[GetEnrichedCharactersUseCase]
         SC[GetCharacterShareTextUseCase]
         RI[CharactersRepository Interface]
     end
-
-    subgraph ":data (Data)"
+    subgraph ":data"
         RP[CharactersRepositoryImpl]
-        DB[(Room Database)]
+        DB[(Room DB v2)]
     end
-
-    subgraph ":network (Remote)"
+    subgraph ":network"
         API[CharactersApiService]
         RF[Retrofit 3 / OkHttp 5]
     end
@@ -59,76 +80,131 @@ graph TD
     VM -->|invoke| SC
     UC -->|fetch| RI
     RI -.->|implements| RP
-    RP -->|fetch/cache| API
-    RP -->|persist| DB
+    RP -->|fetch| API
+    RP -->|persist favourites| DB
     API --> RF
 ```
 
 ---
 
-## 🚦 Getting Started
+## Key Technical Decisions
+
+### Search + Pagination concurrency
+`searchParams: MutableStateFlow<Pair<String, Int>>` carries the query string and a **generation counter**. `flatMapLatest` cancels the previous inner flow on every new emission, making concurrent searches structurally impossible. Pagination jobs are tracked in `paginationJob: Job?` and cancelled the moment a new search fires.
+
+### Retry without re-debounce
+The generation counter doubles as a retry trigger — incrementing it forces a new StateFlow emission even when the query string is unchanged, bypassing the 1-second debounce window.
+
+### Rate-limit handling
+`withRetry()` in `NetworkHelper.kt` retries up to 20 times on HTTP 429, with a configurable delay. All other errors fail immediately. The retry predicate is injectable, making it fully testable without real delays.
+
+### Favourites enrichment
+`GetEnrichedCharactersUseCase` combines the API response `Flow` with `FavouritesRepository.getFavouriteCoverUrls(): Flow<Set<String>>` using `combine`, so the favourite state on every character card updates reactively without re-fetching from the network.
+
+### Assisted injection for detail screen
+`CharacterDetailViewModel` uses Hilt's `@AssistedInject` factory pattern so the character ID can be passed at runtime while all other dependencies are provided by the DI graph.
+
+---
+
+## Tech Stack
+
+| Layer | Library | Version |
+|---|---|---|
+| Language | Kotlin | 2.3.20 |
+| UI | Jetpack Compose + Material 3 | BOM 2025.x |
+| DI | Hilt | 2.59.2 |
+| Image loading | Coil | 3.4.0 |
+| Database | Room | 2.8.4 |
+| Networking | Retrofit 3 + OkHttp 5 | 3.0.0 / 5.3.2 |
+| Navigation | Jetpack Navigation 3 | 1.1.0 |
+| Async | Coroutines + Flow | 1.10.2 |
+| Build | AGP + KSP + Version Catalog | 9.1.1 / 2.3.6 |
+| Serialization | Gson + Kotlinx Serialization | 2.13.2 |
+
+---
+
+## Getting Started
 
 ### Prerequisites
 - **Android Studio** Meerkat (2024.3.1) or newer
 - **JDK 17+**
-- **Android SDK** with API level 25–37
+- **Android SDK** API 25–37
 
 ### Clone & Run
 ```bash
 git clone https://github.com/AbdulSamadQureshi/Brochure-App.git
 cd Brochure-App
-git checkout develop          # always start from develop
-./gradlew assembleDebug       # build
-./gradlew testDebugUnitTest   # run all unit tests
-./gradlew jacocoFullReport    # generate coverage report → build/reports/jacoco/
+git checkout develop           # always work from develop
+./gradlew assembleDebug        # build debug APK
+./gradlew testDebugUnitTest    # run all unit tests
+./gradlew jacocoFullReport     # coverage report → build/reports/jacoco/
+./gradlew ktlintCheck          # code style check
+./gradlew detekt               # static analysis
 ```
 
 ### Contributing
 ```
-1. Branch off develop:  git checkout -b feature/your-feature
-2. Make changes & commit
-3. Open PR targeting develop
-4. CI must pass (Code Quality + Unit Tests)
-5. 1 approving review required before merge
+1.  git checkout -b feature/your-feature   # branch from develop
+2.  Make changes and commit
+3.  Open PR targeting develop
+4.  CI must pass (Code Quality + Unit Tests)
+5.  Merge once green — no approval required (solo project)
 ```
-Releases are cut by opening a `develop → main` PR. Merging it automatically builds the APK and publishes a GitHub Release.
+Releases are cut by opening a `develop → main` PR. Merging it automatically builds the signed APK and publishes a GitHub Release.
 
 ---
 
-## 🛠 Tech Stack
+## Testing
 
-- **UI**: Jetpack Compose (Material 3)
-- **DI**: Hilt 2.59.2
-- **Image Loading**: Coil 3.4.0
-- **Database**: Room 2.8.4
-- **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2
-- **Serialization**: Gson + Kotlinx Serialization (for variant-specific config)
-- **Async**: Coroutines + Flow
-- **Build**: Gradle Version Catalog + KSP 2.3.6
+### Strategy
+
+| Layer | Tool | What's tested |
+|---|---|---|
+| ViewModels | JUnit 4 + Mockito + Turbine | State transitions, debounce timing, pagination guards, effect emissions |
+| Use cases | JUnit 4 + Mockito + Truth | Enrichment logic, blank-name sanitisation, error passthrough, Flow reactivity |
+| Repository | JUnit 4 + Mockito | DTO mapping, DAO interactions, Flow emissions |
+| Network | JUnit 4 + Turbine | `safeApiCall` Loading→Success/Error, `withRetry` retry counts and delays |
+| UI / Screenshots | Roborazzi + Robolectric | Pixel-perfect Compose rendering against committed baselines |
+
+### Coverage (JaCoCo)
+
+**Lines: 80.1% | Instructions: 69.7% | Methods: 70.7%**
+
+Excludes: generated code (Hilt, Room, Compose), UI screens, theme, navigation, `MainActivity`.
+
+```bash
+./gradlew jacocoFullReport
+# → build/reports/jacoco/jacocoFullReport/html/index.html
+```
+
+### Screenshot tests
+Baselines are committed to `app/src/test/screenshots/`. CI fails on any pixel diff and uploads diff PNGs as artifacts for review.
+
+```bash
+./gradlew :app:recordRoborazziDebug   # update baselines
+./gradlew :app:verifyRoborazziDebug   # verify against baselines (CI)
+```
 
 ---
 
-## 🧪 Testing & CI/CD Strategy
+## CI/CD Pipeline
 
-### ⚙️ Automated Pipeline (GitHub Actions)
-I have implemented a comprehensive **CI/CD pipeline** (`.github/workflows/ci.yml`) that ensures high code standards and prevents regressions.
+### Branch Strategy
 
-#### Branch Strategy
 ```
-feature/xyz  →  develop  →  main
-      PR ↗          PR ↗
+feature/*  ──PR──▶  develop  ──PR──▶  main
 ```
 
-| Branch | Protection |
+| Branch | Rules |
 |---|---|
-| `main` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
-| `develop` | No direct pushes · No force pushes · Cannot be deleted · Requires PR with 1 review |
+| `main` | Protected · No direct push · No force push · Cannot be deleted |
+| `develop` | Protected · No direct push · No force push · Cannot be deleted |
 
-All feature branches open PRs against **`develop`**. When ready for stakeholders, a `develop → main` PR is opened and merged to produce a release.
+Feature branches are **automatically deleted** after their PR is merged. `develop` and `main` are never deleted.
 
-#### CI Job Triggers
+### Job Trigger Matrix
 
-| Action | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
+| Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
 | Push to `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | PR opened → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
@@ -137,35 +213,35 @@ All feature branches open PRs against **`develop`**. When ready for stakeholders
 | PR **merged** `develop` → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Direct push to `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-#### CI Job Descriptions
+### CI Jobs
 
-| Stage | Description |
+| Job | Description |
 |---|---|
-| **Code Quality** | Runs `ktlintCheck` (style) and `detekt` (static analysis) to ensure clean code. Reports are uploaded as artifacts. |
-| **Unit Tests** | Executes all JVM unit tests (`testDebugUnitTest`) to verify business logic across all modules. |
-| **Code Coverage** | Generates **JaCoCo** HTML and XML reports to monitor testing depth. |
-| **Screenshot Tests** | Uses **Roborazzi** + **Robolectric** to compare UI against baselines. Fails on any pixel diff and uploads diff PNGs for review. |
-| **Build & Release** | Builds the signed Debug APK, creates a **GitHub Release** with the APK attached so stakeholders can download it directly without GitHub Actions access. |
-
-### 📊 Coverage Summary (JaCoCo)
-**Lines**: **80.1%** | **Instructions**: **69.7%** | **Methods**: **70.7%**
-
-To generate a report locally:
-```bash
-./gradlew jacocoFullReport
-```
+| **Code Quality** | `ktlintCheck` (style) + `detekt` (static analysis, zero-tolerance). Reports uploaded as artifacts (7-day). |
+| **Unit Tests** | `testDebugUnitTest` across all modules. Reports uploaded (7-day). |
+| **Code Coverage** | `jacocoFullReport` — HTML + XML reports uploaded (14-day). |
+| **Screenshot Tests** | `verifyRoborazziDebug` — pixel comparison against baselines. Diff PNGs uploaded on failure (7-day). |
+| **Build & Release** | Signs and builds debug APK, renames to `brochure-debug-{date}-{sha}.apk`, publishes GitHub Release. Stakeholders download directly from the Releases page. |
 
 ---
 
-## 📦 Build Variants & ProGuard
+## Build Variants
 
-| Variant | Minified | Purpose |
+| Variant | Minified | Debuggable | Purpose |
+|---|---|---|---|
+| `debug` | No | Yes | Local development |
+| `qa` | Yes (R8) | Yes | QA testing with obfuscation |
+| `release` | Yes (R8) | No | Production build |
+
+Each variant reads its API base URL and config from a corresponding `.properties` file (`debug.properties`, `qa.properties`, `release.properties`).
+
+---
+
+## Code Quality
+
+| Tool | Config | Enforcement |
 |---|---|---|
-| `release` | **Yes** | Production build with full R8 optimization. |
-| `qa` | **Yes** | Debuggable build with obfuscation for testing. |
-| `debug` | No | Standard development build. |
+| **Detekt** | `config/detekt/detekt.yml` | `maxIssues: 0` — zero tolerance; CI fails on any violation |
+| **ktlint** | Gradle plugin `14.2.0` | `ignoreFailures: false`; CI fails on style violations |
 
----
-
-## 📝 License
-See [SOLUTION.md](SOLUTION.md) for more details on the challenge requirements and trade-offs.
+Key Detekt rules: max line length 140, cyclomatic complexity ≤ 25, long method ≤ 60 lines, no FIXME/STOPSHIP comments, coroutine best-practices enforced, `@Composable` functions exempt from complexity rules.
