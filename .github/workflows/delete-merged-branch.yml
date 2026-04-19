@@ -8,6 +8,8 @@ jobs:
   delete-branch:
     name: Delete merged feature branch
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to delete branch refs via the GitHub API
     # Only run when the PR was actually merged (not just closed),
     # and never delete develop or main.
     if: |
