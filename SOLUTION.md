@@ -15,7 +15,6 @@ A production-quality Android app covering all challenge requirements plus severa
 - Character detail screen
 
 **Beyond scope:**
-- **Navigation 3** (androidx.navigation3)
 - Favourites with Room persistence and real-time cross-screen sync
 - Share character card via Android share sheet
 - Full CI/CD pipeline (GitHub Actions)
@@ -25,7 +24,6 @@ A production-quality Android app covering all challenge requirements plus severa
 - Code style enforcement (ktlint)
 - Gradle configuration cache
 - Signed APK published to GitHub Releases on every `develop → main` merge
-- **QA Build Type**: Configured with release-like minification (R8) but for internal testing.
 
 ---
 
@@ -34,8 +32,6 @@ A production-quality Android app covering all challenge requirements plus severa
 ### Why Layer Modules — and How They Relate to Feature Modules
 
 The project uses **layer modules** (`:app`, `:domain`, `:data`, `:network`, `:core`). Layer modules and feature modules are not competing choices — they are different phases of the same scaleable architecture. Layer modules are the **foundation** that feature modules sit on top of.
-
-**Pure Kotlin Domain**: The `:domain` module is a pure Kotlin library with **zero Android dependencies**, ensuring business logic is decoupled and use cases are extremely fast to unit test.
 
 **Why not a single module?**
 A single module removes compile-time boundaries. Nothing stops a ViewModel from importing a Room DAO directly. `:domain` can accidentally grow Android dependencies. Every Kotlin file recompiles on every change regardless of what was touched.
@@ -59,10 +55,6 @@ The layer modules are not replaced — they become the shared infrastructure eve
 Feature modules require each vertical slice to carry its own DI module, domain interfaces, and data sources. Cross-cutting use cases like `GetEnrichedCharactersUseCase` — which combines the character list with the favourites state — have no natural home in a feature module without creating a `:feature:common` that immediately becomes a second `:domain`. The layer structure handles cross-cutting concerns cleanly by design.
 
 ---
-
-### Modern Navigation (Navigation 3)
-
-The app uses **Jetpack Navigation 3**, the latest experimental iteration of the navigation library. It treats navigation as state, where `NavDisplay` observes a list of `NavKey`s. This integrates perfectly with the MVI pattern, as navigation effects (one-shot events) can be treated as emissions from the ViewModel that update the navigation state.
 
 ### Why MVI over MVVM?
 
@@ -271,12 +263,6 @@ Jetpack Navigation 3 uses `rememberNavBackStack()` with `NavDisplay` and lambda-
 
 **Network** (`NetworkHelperTest`): 11 tests covering the retry state machine — verifies exact call counts, delay values, and the rule that only 429 triggers a retry.
 
-### Screenshot tests (Roborazzi)
-
-The app uses **Roborazzi** for pixel-perfect UI verification.
-- **JVM-Based**: Tests run on the host machine using Robolectric, making them significantly faster than traditional instrumented tests as they don't require an emulator.
-- **CI Integration**: The pipeline automatically verifies every PR against committed baselines in `app/src/test/screenshots/`.
-
 **Screenshot** (`ThemeColorsScreenshotTest`): Roborazzi baseline committed to Git. CI runs `verifyRoborazziDebug` and fails on any pixel diff, protecting against accidental theme/colour regressions.
 
 ### What is NOT tested and why
@@ -364,16 +350,6 @@ Current jobs run sequentially. As team size grows:
 - `detekt` with `maxIssues: 0` prevents technical debt accumulation regardless of team size or deadline pressure
 - `ktlint` standardises formatting so code review focuses on logic
 - JaCoCo coverage gate can be tightened per module independently as teams mature
-
-### Build Variants
-
-| Variant | Minified | Debuggable | Purpose |
-|---|---|---|---|
-| `debug` | No | Yes | Local development |
-| `qa` | **Yes (R8)** | **No** | QA testing with release-like obfuscation and performance |
-| `release` | Yes (R8) | No | Production build |
-
-The `qa` build type is specifically configured to be non-debuggable and inherits release ProGuard/R8 rules to ensure QA testing happens on code that is as close to production as possible.
 
 ---
 
