@@ -372,9 +372,19 @@ feature/*  ──PR──▶  develop  ──PR──▶  main
 ```
 
 - All work happens on feature branches and merges to `develop` via PR
-- `develop → main` is the release gate; merging it triggers the Build & Release job
+- `main` is the release branch — merging any PR into `main` triggers the Build & Release job
 - Both `develop` and `main` are protected: no direct pushes, no force pushes, cannot be deleted
 - Feature branches are automatically deleted after their PR merges (via `delete-merged-branch.yml`)
+
+### What runs when
+
+| Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
+|---|---|---|---|---|---|
+| Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Any PR opened/updated → `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+All four check jobs are scoped to PRs targeting `develop`. Releases always build from `main` regardless of the source branch — this means a `hotfix/* → main` PR also produces a release, not just the standard `develop → main` flow.
 
 ### Why build only on `develop → main` merge?
 

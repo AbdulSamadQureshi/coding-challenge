@@ -11,13 +11,19 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # Runs on: push to develop | PRs targeting develop | PRs targeting main
-  # Skips on: the "closed" event (PR merged/closed) — no point re-linting
+  # Check jobs (code-quality, unit-tests, coverage, screenshot-tests)
+  #
+  # Run on:  feature → develop PRs (opened, synchronize, reopened)
+  # Skip on: the "closed" event (no point checking after a merge)
+  #          any PR targeting main (code was already verified on the feature PR
+  #          that landed it in develop — re-running adds no new signal)
   # ─────────────────────────────────────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,14 +52,13 @@ jobs:
           path: '**/build/reports/detekt/**'
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,14 +84,13 @@ jobs:
           path: '**/build/reports/tests/**'
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
     needs: unit-tests
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -118,14 +122,13 @@ jobs:
           path: build/reports/jacoco/jacocoFullReport/jacocoFullReport.xml
           retention-days: 14
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Same trigger scope as code-quality
-  # ─────────────────────────────────────────────────────────────────────────────
   screenshot-tests:
     name: Screenshot Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    if: github.event.action != 'closed'
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -158,8 +161,8 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Runs ONLY when a develop → main PR is merged.
-  # Direct pushes to main and merges into develop never trigger this job.
+  # Runs whenever ANY PR is merged into main (develop → main, hotfix → main, etc.)
+  # Releases always come from main — the head branch does not matter.
   # ─────────────────────────────────────────────────────────────────────────────
   build:
     name: Build & Release Debug APK
@@ -169,8 +172,7 @@ jobs:
     if: >
       github.event_name == 'pull_request' &&
       github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.ref == 'develop'
+      github.event.pull_request.base.ref == 'main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -215,7 +217,7 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: "Debug Build #${{ github.run_number }}"
           body: |
-            **Debug build** merged from `develop` → `main`
+            **Debug build** from `${{ github.event.pull_request.head.ref }}` → `main`
 
             **PR:** #${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}
             **Commit:** [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
