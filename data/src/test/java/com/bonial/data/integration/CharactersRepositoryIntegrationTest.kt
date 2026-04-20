@@ -1,8 +1,8 @@
 package com.bonial.data.integration
 
 import app.cash.turbine.test
-import com.bonial.data.repository.CharactersRepositoryImpl
 import com.bonial.data.remote.service.CharactersApiService
+import com.bonial.data.repository.CharactersRepositoryImpl
 import com.bonial.domain.model.network.response.Request
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
@@ -27,18 +27,19 @@ import retrofit2.converter.gson.GsonConverterFactory
  * or incorrect HTTP error mapping end-to-end.
  */
 class CharactersRepositoryIntegrationTest {
-
     private val mockWebServer = MockWebServer()
     private lateinit var repository: CharactersRepositoryImpl
 
     @Before
     fun setUp() {
         mockWebServer.start()
-        val apiService = Retrofit.Builder()
-            .baseUrl(mockWebServer.url("/"))
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(CharactersApiService::class.java)
+        val apiService =
+            Retrofit
+                .Builder()
+                .baseUrl(mockWebServer.url("/"))
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(CharactersApiService::class.java)
         repository = CharactersRepositoryImpl(apiService)
     }
 
@@ -50,148 +51,157 @@ class CharactersRepositoryIntegrationTest {
     // ── characters() ─────────────────────────────────────────────────────────
 
     @Test
-    fun `loading a character page emits loading then the mapped domain model`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_PAGE_JSON).setResponseCode(200))
+    fun `loading a character page emits loading then the mapped domain model`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_PAGE_JSON).setResponseCode(200))
 
-        repository.characters(page = 1).test {
-            assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
+            repository.characters(page = 1).test {
+                assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
 
-            val success = awaitItem() as Request.Success
-            assertThat(success.data.totalPages).isEqualTo(42)
-            assertThat(success.data.characters).hasSize(2)
+                val success = awaitItem() as Request.Success
+                assertThat(success.data.totalPages).isEqualTo(42)
+                assertThat(success.data.characters).hasSize(2)
 
-            val rick = success.data.characters[0]
-            assertThat(rick.id).isEqualTo(1)
-            assertThat(rick.name).isEqualTo("Rick Sanchez")
-            assertThat(rick.status).isEqualTo("Alive")
-            assertThat(rick.species).isEqualTo("Human")
-            assertThat(rick.imageUrl).isEqualTo("https://rickandmortyapi.com/api/character/avatar/1.jpeg")
+                val rick = success.data.characters[0]
+                assertThat(rick.id).isEqualTo(1)
+                assertThat(rick.name).isEqualTo("Rick Sanchez")
+                assertThat(rick.status).isEqualTo("Alive")
+                assertThat(rick.species).isEqualTo("Human")
+                assertThat(rick.imageUrl).isEqualTo("https://rickandmortyapi.com/api/character/avatar/1.jpeg")
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `loading a page with null results produces an empty character list`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_NULL_RESULTS_JSON).setResponseCode(200))
+    fun `loading a page with null results produces an empty character list`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_NULL_RESULTS_JSON).setResponseCode(200))
 
-        repository.characters(page = 1).test {
-            awaitItem() // Loading
+            repository.characters(page = 1).test {
+                awaitItem() // Loading
 
-            val success = awaitItem() as Request.Success
-            assertThat(success.data.characters).isEmpty()
+                val success = awaitItem() as Request.Success
+                assertThat(success.data.characters).isEmpty()
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `character with null origin and location maps to null fields in the domain model`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_NULL_NESTED_JSON).setResponseCode(200))
+    fun `character with null origin and location maps to null fields in the domain model`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setBody(CHARACTERS_NULL_NESTED_JSON).setResponseCode(200))
 
-        repository.characters(page = 1).test {
-            awaitItem() // Loading
+            repository.characters(page = 1).test {
+                awaitItem() // Loading
 
-            val success = awaitItem() as Request.Success
-            // characters() maps to Character (not CharacterDetail), which has no origin/location fields.
-            // What we can verify: the character is deserialized without crashing despite null nested objects.
-            assertThat(success.data.characters).hasSize(1)
-            assertThat(success.data.characters[0].id).isEqualTo(5)
+                val success = awaitItem() as Request.Success
+                // characters() maps to Character (not CharacterDetail), which has no origin/location fields.
+                // What we can verify: the character is deserialized without crashing despite null nested objects.
+                assertThat(success.data.characters).hasSize(1)
+                assertThat(success.data.characters[0].id).isEqualTo(5)
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `a 404 response emits loading then an error with code 404`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setResponseCode(404))
+    fun `a 404 response emits loading then an error with code 404`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
-        repository.characters(page = 1).test {
-            assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
+            repository.characters(page = 1).test {
+                assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
 
-            val error = awaitItem() as Request.Error
-            assertThat(error.apiError?.code).isEqualTo("404")
-            assertThat(error.apiError?.message).isEqualTo("The requested resource was not found.")
+                val error = awaitItem() as Request.Error
+                assertThat(error.apiError?.code).isEqualTo("404")
+                assertThat(error.apiError?.message).isEqualTo("The requested resource was not found.")
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `a 500 response emits loading then an error with a server error message`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+    fun `a 500 response emits loading then an error with a server error message`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setResponseCode(500))
 
-        repository.characters(page = 1).test {
-            awaitItem() // Loading
+            repository.characters(page = 1).test {
+                awaitItem() // Loading
 
-            val error = awaitItem() as Request.Error
-            assertThat(error.apiError?.code).isEqualTo("500")
-            assertThat(error.apiError?.message).isEqualTo(
-                "The server is having trouble right now. Please try again later."
-            )
+                val error = awaitItem() as Request.Error
+                assertThat(error.apiError?.code).isEqualTo("500")
+                assertThat(error.apiError?.message).isEqualTo(
+                    "The server is having trouble right now. Please try again later.",
+                )
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     // ── character(id) ─────────────────────────────────────────────────────────
 
     @Test
-    fun `loading a character detail emits loading then the fully mapped domain model`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setBody(CHARACTER_DETAIL_JSON).setResponseCode(200))
+    fun `loading a character detail emits loading then the fully mapped domain model`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setBody(CHARACTER_DETAIL_JSON).setResponseCode(200))
 
-        repository.character(id = 1).test {
-            assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
+            repository.character(id = 1).test {
+                assertThat(awaitItem()).isInstanceOf(Request.Loading::class.java)
 
-            val success = awaitItem() as Request.Success
-            with(success.data) {
-                assertThat(id).isEqualTo(1)
-                assertThat(name).isEqualTo("Rick Sanchez")
-                assertThat(status).isEqualTo("Alive")
-                assertThat(species).isEqualTo("Human")
-                assertThat(gender).isEqualTo("Male")
-                assertThat(origin).isEqualTo("Earth (C-137)")
-                assertThat(location).isEqualTo("Citadel of Ricks")
-                assertThat(imageUrl).isEqualTo("https://rickandmortyapi.com/api/character/avatar/1.jpeg")
+                val success = awaitItem() as Request.Success
+                with(success.data) {
+                    assertThat(id).isEqualTo(1)
+                    assertThat(name).isEqualTo("Rick Sanchez")
+                    assertThat(status).isEqualTo("Alive")
+                    assertThat(species).isEqualTo("Human")
+                    assertThat(gender).isEqualTo("Male")
+                    assertThat(origin).isEqualTo("Earth (C-137)")
+                    assertThat(location).isEqualTo("Citadel of Ricks")
+                    assertThat(imageUrl).isEqualTo("https://rickandmortyapi.com/api/character/avatar/1.jpeg")
+                }
+
+                awaitComplete()
             }
-
-            awaitComplete()
         }
-    }
 
     @Test
-    fun `loading a character detail with null origin and location maps both to null`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setBody(CHARACTER_NO_ORIGIN_JSON).setResponseCode(200))
+    fun `loading a character detail with null origin and location maps both to null`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setBody(CHARACTER_NO_ORIGIN_JSON).setResponseCode(200))
 
-        repository.character(id = 99).test {
-            awaitItem() // Loading
+            repository.character(id = 99).test {
+                awaitItem() // Loading
 
-            val success = awaitItem() as Request.Success
-            assertThat(success.data.origin).isNull()
-            assertThat(success.data.location).isNull()
+                val success = awaitItem() as Request.Success
+                assertThat(success.data.origin).isNull()
+                assertThat(success.data.location).isNull()
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `a 404 on the detail endpoint emits loading then an error with code 404`() = runBlocking {
-        mockWebServer.enqueue(MockResponse().setResponseCode(404))
+    fun `a 404 on the detail endpoint emits loading then an error with code 404`() =
+        runBlocking {
+            mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
-        repository.character(id = 999).test {
-            awaitItem() // Loading
+            repository.character(id = 999).test {
+                awaitItem() // Loading
 
-            val error = awaitItem() as Request.Error
-            assertThat(error.apiError?.code).isEqualTo("404")
+                val error = awaitItem() as Request.Error
+                assertThat(error.apiError?.code).isEqualTo("404")
 
-            awaitComplete()
+                awaitComplete()
+            }
         }
-    }
 
     // ── JSON fixtures ─────────────────────────────────────────────────────────
 
     companion object {
-        private val CHARACTERS_PAGE_JSON = """
+        private val CHARACTERS_PAGE_JSON =
+            """
             {
               "info": { "count": 826, "pages": 42, "next": "https://rickandmortyapi.com/api/character?page=2", "prev": null },
               "results": [
@@ -217,16 +227,18 @@ class CharactersRepositoryIntegrationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        private val CHARACTERS_NULL_RESULTS_JSON = """
+        private val CHARACTERS_NULL_RESULTS_JSON =
+            """
             {
               "info": { "count": 0, "pages": 0, "next": null, "prev": null },
               "results": null
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        private val CHARACTERS_NULL_NESTED_JSON = """
+        private val CHARACTERS_NULL_NESTED_JSON =
+            """
             {
               "info": { "count": 1, "pages": 1, "next": null, "prev": null },
               "results": [
@@ -234,9 +246,10 @@ class CharactersRepositoryIntegrationTest {
                   "gender": "Male", "image": null, "origin": null, "location": null }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        private val CHARACTER_DETAIL_JSON = """
+        private val CHARACTER_DETAIL_JSON =
+            """
             {
               "id": 1,
               "name": "Rick Sanchez",
@@ -247,10 +260,11 @@ class CharactersRepositoryIntegrationTest {
               "origin": { "name": "Earth (C-137)" },
               "location": { "name": "Citadel of Ricks" }
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        private val CHARACTER_NO_ORIGIN_JSON = """
+        private val CHARACTER_NO_ORIGIN_JSON =
+            """
             { "id": 99, "name": "Unknown", "origin": null, "location": null }
-        """.trimIndent()
+            """.trimIndent()
     }
 }
