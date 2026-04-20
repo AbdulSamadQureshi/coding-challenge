@@ -403,8 +403,8 @@ Releases are cut by opening a `develop → main` PR. Merging it automatically bu
 |---|---|---|
 | ViewModels | JUnit 4 + Mockito + Turbine | State transitions, debounce timing, pagination guards, effect emissions |
 | Use cases | JUnit 4 + Mockito + Truth | Enrichment logic, blank-name sanitisation, error passthrough, Flow reactivity |
-| Repository | JUnit 4 + Mockito | DTO mapping, DAO interactions, Flow emissions |
-| Network | JUnit 4 + Turbine | `safeApiCall` Loading→Success/Error, `withRetry` retry counts and delays |
+| Repository (unit) | JUnit 4 + Mockito | DTO mapping, DAO interactions, Flow emissions |
+| API integration | JUnit 4 + MockWebServer + Turbine | Full HTTP → DTO → domain model pipeline; `safeApiCall` and `withRetry` end-to-end |
 | UI / Screenshots | Roborazzi + Robolectric | Pixel-perfect Compose rendering against committed baselines |
 
 ### What is NOT tested and why

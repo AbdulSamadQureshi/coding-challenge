@@ -263,15 +263,21 @@ Jetpack Navigation 3 uses `rememberNavBackStack()` with `NavDisplay` and lambda-
 
 **Use cases** (`GetEnrichedCharactersUseCaseTest`, `MapSuccessTest`): 9 + 3 tests. The enrichment test verifies that a character is marked `isFavourite=true` only when its image URL appears in the favourites set, and that the marking survives blank-name sanitisation.
 
-**Repository** (`CharactersRepositoryImplTest`, `FavouritesRepositoryImplTest`): Verifies that DTO-to-domain mapping is correct and that DAO operations are called with the right arguments.
+**Repository — unit** (`CharactersRepositoryImplTest`, `FavouritesRepositoryImplTest`): Verifies that DTO-to-domain mapping is correct and that DAO operations are called with the right arguments. The API service is mocked, so these tests focus purely on mapping and flow logic.
 
-**Network** (`NetworkHelperTest`): 11 tests covering the retry state machine — verifies exact call counts, delay values, and the rule that only 429 triggers a retry.
+**API integration** (`CharactersApiServiceIntegrationTest`, `CharactersRepositoryIntegrationTest`, `NetworkHelperIntegrationTest`): A real Retrofit + Gson stack is wired against `MockWebServer` — no mocks, no emulator, pure JVM. These tests catch what the unit tests structurally cannot:
+- Wrong `@SerializedName` keys or missing `@Query`/`@Path` annotations
+- Gson crashing on null optional fields (`origin`, `location`, `image`) absent from the JSON
+- HTTP error codes (404, 500) flowing out as the correct `Request.Error` code and user message end-to-end
+- `withRetry` actually sending the right number of HTTP requests on 429 vs. non-retryable errors
 
-**Screenshot** (`ThemeColorsScreenshotTest`): Roborazzi baseline committed to Git. CI runs `verifyRoborazziDebug` and fails on any pixel diff, protecting against accidental theme/colour regressions.
+**Network — unit** (`NetworkHelperTest`): 11 tests covering the retry state machine with injected delay — verifies exact call counts and the rule that only 429 triggers a retry, without real I/O.
+
+**Screenshot** (`CharactersScreenShotTest`, `CharacterDetailScreenShotTest`, `ThemeColorsScreenshotTest`): Roborazzi baselines committed to Git. CI runs `verifyRoborazziDebug` and fails on any pixel diff, protecting against accidental layout or theme regressions across all distinct UI states.
 
 ### What is NOT tested and why
 
-- **Compose UI** (beyond screenshots): Testing individual Compose components with `ComposeTestRule` would require either an emulator or Robolectric with a Compose renderer. Screenshot tests cover visual correctness; business logic is fully covered at the ViewModel and use-case layers.
+- **Compose UI** (beyond screenshots): Testing individual Compose components with `ComposeTestRule` would require either an emulator or Robolectric with a full Compose renderer. Screenshot tests cover visual correctness; business logic is fully covered at the ViewModel and use-case layers.
 - **Room DAOs**: DAO testing requires an in-memory Room database which needs a real Android context. Given the repository layer is mocked in ViewModel tests and the DAO operations are simple CRUD, this was deprioritised in favour of broader coverage at the use-case layer.
 
 ### Coverage
