@@ -38,7 +38,7 @@ class CharacterDetailScreenShotTest {
         )
 
     @Test
-    fun shimmerLoading() {
+    fun detail_screen_shows_shimmer_skeleton_while_loading() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 CharacterDetailShimmer()
@@ -48,7 +48,7 @@ class CharacterDetailScreenShotTest {
     }
 
     @Test
-    fun populatedContent() {
+    fun detail_screen_shows_full_character_information() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 CharacterDetailContent(
@@ -70,7 +70,7 @@ class CharacterDetailScreenShotTest {
     }
 
     @Test
-    fun errorState() {
+    fun detail_screen_shows_error_with_retry_button() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 ErrorMessage(

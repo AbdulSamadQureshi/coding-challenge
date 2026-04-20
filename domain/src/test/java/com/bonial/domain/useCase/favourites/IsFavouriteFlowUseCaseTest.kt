@@ -15,7 +15,7 @@ class IsFavouriteFlowUseCaseTest {
     private val useCase = IsFavouriteFlowUseCase(repository)
 
     @Test
-    fun `invoke delegates to repository isFavouriteFlow with exact url`() =
+    fun `checking favourite status calls the repository with the correct url`() =
         runBlocking {
             val url = "https://example.com/avatar.png"
             val flow = MutableStateFlow(false)
@@ -32,7 +32,7 @@ class IsFavouriteFlowUseCaseTest {
         }
 
     @Test
-    fun `flow emits updated value when favourite state changes`() =
+    fun `favourite status updates automatically when the database changes`() =
         runBlocking {
             val url = "https://example.com/avatar.png"
             val flow = MutableStateFlow(false)

@@ -18,7 +18,7 @@ class CharactersUseCaseTest {
     private val useCase = CharactersUseCase(repository)
 
     @Test
-    fun `invoke forwards page parameter to repository`(): Unit =
+    fun `requesting a page number passes it correctly to the repository`(): Unit =
         runBlocking {
             val page =
                 CharactersPage(
@@ -40,7 +40,7 @@ class CharactersUseCaseTest {
         }
 
     @Test
-    fun `invoke surfaces repository error to caller`(): Unit =
+    fun `repository error is passed through to the caller`(): Unit =
         runBlocking {
             whenever(repository.characters(1, null)).thenReturn(
                 flowOf(

@@ -18,7 +18,7 @@ class CharacterDetailUseCaseTest {
     private val useCase = CharacterDetailUseCase(repository)
 
     @Test
-    fun `invoke delegates to repository with given id`(): Unit =
+    fun `requesting a character by id fetches it from the repository`(): Unit =
         runBlocking {
             val detail = CharacterDetail(5, "Beth", "Alive", "Human", "Female", "Earth", "Home", null)
             whenever(repository.character(5)).thenReturn(flowOf(Request.Success(detail)))
@@ -32,7 +32,7 @@ class CharacterDetailUseCaseTest {
         }
 
     @Test
-    fun `invoke surfaces repository error to caller`(): Unit =
+    fun `repository error is passed through to the caller`(): Unit =
         runBlocking {
             whenever(repository.character(99)).thenReturn(
                 flowOf(Request.Error(ApiError("404", "Not found."))),

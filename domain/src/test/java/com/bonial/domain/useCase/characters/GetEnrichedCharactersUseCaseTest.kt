@@ -34,7 +34,7 @@ class GetEnrichedCharactersUseCaseTest {
     // ─── favourite enrichment ─────────────────────────────────────────────────
 
     @Test
-    fun `marks character as favourite when its imageUrl is in the favourites set`() =
+    fun `character is shown as favourite when its image matches a saved favourite`() =
         runBlocking {
             val rick = character(1, "https://img/rick.png")
             whenever(charactersRepository.characters(1, null))
@@ -50,7 +50,7 @@ class GetEnrichedCharactersUseCaseTest {
         }
 
     @Test
-    fun `marks character as not favourite when its imageUrl is absent from the set`() =
+    fun `character is shown as not favourite when its image is not in the saved favourites`() =
         runBlocking {
             val morty = character(2, "https://img/morty.png")
             whenever(charactersRepository.characters(1, null))
@@ -66,7 +66,7 @@ class GetEnrichedCharactersUseCaseTest {
         }
 
     @Test
-    fun `character with null imageUrl is never marked as favourite`() =
+    fun `character without an image is never shown as favourite`() =
         runBlocking {
             val noImage = character(3, imageUrl = null)
             whenever(charactersRepository.characters(1, null))
@@ -82,7 +82,7 @@ class GetEnrichedCharactersUseCaseTest {
         }
 
     @Test
-    fun `enriches multiple characters independently`() =
+    fun `each character in the list gets its own correct favourite status`() =
         runBlocking {
             val rick = character(1, "https://img/rick.png")
             val morty = character(2, "https://img/morty.png")
@@ -104,7 +104,7 @@ class GetEnrichedCharactersUseCaseTest {
     // ─── blank / null name sanitisation ──────────────────────────────────────
 
     @Test
-    fun `blank name string is sanitised to null before reaching the repository`(): Unit =
+    fun `searching with only spaces is treated as no search term`(): Unit =
         runBlocking {
             whenever(charactersRepository.characters(1, null))
                 .thenReturn(flowOf(Request.Success(page())))
@@ -120,7 +120,7 @@ class GetEnrichedCharactersUseCaseTest {
         }
 
     @Test
-    fun `non-blank name is forwarded to the repository unchanged`(): Unit =
+    fun `searching with a name passes it to the repository as-is`(): Unit =
         runBlocking {
             whenever(charactersRepository.characters(1, "Rick"))
                 .thenReturn(flowOf(Request.Success(page(character(1)))))
@@ -137,7 +137,7 @@ class GetEnrichedCharactersUseCaseTest {
     // ─── pagination ───────────────────────────────────────────────────────────
 
     @Test
-    fun `totalPages is forwarded from the repository response`() =
+    fun `total page count from the server is passed through correctly`() =
         runBlocking {
             whenever(charactersRepository.characters(2, null))
                 .thenReturn(flowOf(Request.Success(page(character(1), totalPages = 42))))
@@ -154,7 +154,7 @@ class GetEnrichedCharactersUseCaseTest {
     // ─── error passthrough ────────────────────────────────────────────────────
 
     @Test
-    fun `repository error is passed through as Request Error`() =
+    fun `server error is passed through to the caller unchanged`() =
         runBlocking {
             whenever(charactersRepository.characters(1, null))
                 .thenReturn(flowOf(Request.Error(ApiError("500", "Server error"))))
@@ -171,7 +171,7 @@ class GetEnrichedCharactersUseCaseTest {
     // ─── reactivity ───────────────────────────────────────────────────────────
 
     @Test
-    fun `re-emits with updated favourite status when favourites set changes`() =
+    fun `character favourite status updates automatically when favourites change`() =
         runBlocking {
             val rick = character(1, "https://img/rick.png")
             whenever(charactersRepository.characters(1, null))
