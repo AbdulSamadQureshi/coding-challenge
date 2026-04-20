@@ -453,10 +453,11 @@ Feature branches are **automatically deleted** after their PR is merged. `develo
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
 | Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Any PR opened/updated → `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `develop` → `main` PR opened/updated | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hotfix PR opened/updated → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-> All checks run only on feature → `develop` PRs. By the time any branch is ready to merge into `main`, the code has already been verified. Releases always build from `main` — the source branch does not matter.
+> `develop → main` skips all checks — every commit in it was already verified on its feature PR. Hotfix PRs targeting `main` directly run all checks since they bypass the normal `develop` flow.
 
 ### CI Jobs
 

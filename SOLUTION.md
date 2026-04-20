@@ -381,10 +381,11 @@ feature/*  ──PR──▶  develop  ──PR──▶  main
 | Event | Code Quality | Unit Tests | Coverage | Screenshot Tests | Build & Release |
 |---|---|---|---|---|---|
 | Feature PR opened/updated → `develop` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Any PR opened/updated → `main` | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `develop` → `main` PR opened/updated | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hotfix PR opened/updated → `main` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Any PR **merged** → `main` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-All four check jobs are scoped to PRs targeting `develop`. Releases always build from `main` regardless of the source branch — this means a `hotfix/* → main` PR also produces a release, not just the standard `develop → main` flow.
+`develop → main` skips checks because every commit was already verified on its feature PR. Hotfix PRs targeting `main` directly run all checks since they bypass the normal develop flow. Releases always build from `main` regardless of the source branch.
 
 ### Why build only on `develop → main` merge?
 

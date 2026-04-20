@@ -13,17 +13,20 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Check jobs (code-quality, unit-tests, coverage, screenshot-tests)
   #
-  # Run on:  feature → develop PRs (opened, synchronize, reopened)
+  # Run on:  feature → develop PRs  (standard development flow)
+  #          hotfix  → main PRs     (emergency fixes that skip develop)
   # Skip on: the "closed" event (no point checking after a merge)
-  #          any PR targeting main (code was already verified on the feature PR
-  #          that landed it in develop — re-running adds no new signal)
+  #          develop → main PRs     (code was already verified on every feature
+  #                                  PR that landed it in develop)
   # ─────────────────────────────────────────────────────────────────────────────
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
     if: >
       github.event.action != 'closed' &&
-      github.event.pull_request.base.ref == 'develop'
+      (github.event.pull_request.base.ref == 'develop' ||
+       (github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.ref != 'develop'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,7 +61,9 @@ jobs:
     needs: code-quality
     if: >
       github.event.action != 'closed' &&
-      github.event.pull_request.base.ref == 'develop'
+      (github.event.pull_request.base.ref == 'develop' ||
+       (github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.ref != 'develop'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,7 +95,9 @@ jobs:
     needs: unit-tests
     if: >
       github.event.action != 'closed' &&
-      github.event.pull_request.base.ref == 'develop'
+      (github.event.pull_request.base.ref == 'develop' ||
+       (github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.ref != 'develop'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,7 +135,9 @@ jobs:
     needs: code-quality
     if: >
       github.event.action != 'closed' &&
-      github.event.pull_request.base.ref == 'develop'
+      (github.event.pull_request.base.ref == 'develop' ||
+       (github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.ref != 'develop'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
