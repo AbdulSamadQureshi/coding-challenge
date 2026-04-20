@@ -7,19 +7,19 @@ import org.junit.Test
 
 class MapSuccessTest {
     @Test
-    fun `transforms Success payload`() {
+    fun `transforming a successful result applies the mapping function`() {
         val result = Request.Success(42).mapSuccess { it * 2 }
         assertThat((result as Request.Success).data).isEqualTo(84)
     }
 
     @Test
-    fun `passes Loading through unchanged`() {
+    fun `transforming a loading state leaves it unchanged`() {
         val result = Request.Loading.mapSuccess<Nothing, String> { "should not run" }
         assertThat(result).isInstanceOf(Request.Loading::class.java)
     }
 
     @Test
-    fun `passes Error through unchanged`() {
+    fun `transforming an error state leaves it unchanged`() {
         val error = ApiError("404", "Not found")
         val result = Request.Error(error).mapSuccess<Nothing, String> { "should not run" }
         assertThat((result as Request.Error).apiError?.code).isEqualTo("404")

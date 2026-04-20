@@ -25,6 +25,10 @@ A production-quality Android app covering all challenge requirements plus severa
 - Gradle configuration cache
 - Signed APK published to GitHub Releases on every `develop → main` merge
 
+### Note on Data Source
+
+This project uses the public **Rick & Morty API** as its data source rather than a marketplace API. The domain fields differ — characters have species, status, origin, and location instead of price, description, and seller info — but the architecture is identical to how a marketplace item list would be built. The repository layer, use cases, ViewModels, and UI state model are all data-agnostic; swapping the API and domain model would leave every architectural pattern intact. All three extra features from the brief (Search, Favourites, Share) are fully implemented.
+
 ---
 
 ## Architecture Decisions

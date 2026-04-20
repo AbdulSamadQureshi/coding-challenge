@@ -25,7 +25,7 @@ class GetCharacterShareTextUseCaseTest {
     )
 
     @Test
-    fun `all fields populated produces name, species, status, and image url`() =
+    fun `share text includes name, species, status, and image link when all are available`() =
         runBlocking {
             val result = useCase(detail())
             assertThat(result).isEqualTo(
@@ -34,7 +34,7 @@ class GetCharacterShareTextUseCaseTest {
         }
 
     @Test
-    fun `null status is omitted from share text`() =
+    fun `share text skips status when it is missing`() =
         runBlocking {
             val result = useCase(detail(status = null))
             assertThat(result).isEqualTo(
@@ -43,7 +43,7 @@ class GetCharacterShareTextUseCaseTest {
         }
 
     @Test
-    fun `null species is omitted from share text`() =
+    fun `share text skips species when it is missing`() =
         runBlocking {
             val result = useCase(detail(species = null))
             assertThat(result).isEqualTo(
@@ -52,7 +52,7 @@ class GetCharacterShareTextUseCaseTest {
         }
 
     @Test
-    fun `null image url produces share text without trailing newline`() =
+    fun `share text has no image link when image url is missing`() =
         runBlocking {
             val result = useCase(detail(imageUrl = null))
             assertThat(result).isEqualTo("Rick Sanchez · Human · Alive")
@@ -60,7 +60,7 @@ class GetCharacterShareTextUseCaseTest {
         }
 
     @Test
-    fun `null name produces share text starting from species`() =
+    fun `share text starts from species when name is missing`() =
         runBlocking {
             val result = useCase(detail(name = null))
             // name is null → appends "" then " · Human · Alive"
@@ -68,7 +68,7 @@ class GetCharacterShareTextUseCaseTest {
         }
 
     @Test
-    fun `all optional fields null returns only empty name`() =
+    fun `share text is empty when all character details are missing`() =
         runBlocking {
             val result = useCase(detail(name = null, species = null, status = null, imageUrl = null))
             assertThat(result).isEmpty()

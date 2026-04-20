@@ -53,7 +53,7 @@ class CharacterDetailViewModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `successful load populates character state and clears loading`() =
+    fun `opening a character screen shows the character details`() =
         runTest {
             givenSuccessResponse(CHARACTER_ID)
 
@@ -70,7 +70,7 @@ class CharacterDetailViewModelTest {
         }
 
     @Test
-    fun `isFavourite is updated from the favourite flow after load`() =
+    fun `heart icon shows filled when character is already saved as favourite`() =
         runTest {
             givenSuccessResponse(CHARACTER_ID)
             whenever(isFavouriteFlowUseCase(IMAGE_URL))
@@ -90,7 +90,7 @@ class CharacterDetailViewModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `api error sets error state and clears loading`() =
+    fun `server failure on detail screen shows error message`() =
         runTest {
             whenever(characterDetailUseCase(CHARACTER_ID)).thenReturn(
                 flowOf(Request.Error(ApiError("404", "Not found."))),
@@ -112,7 +112,7 @@ class CharacterDetailViewModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `Retry intent re-fetches the character from the use case`() =
+    fun `tapping retry fetches the character again`() =
         runTest {
             // First call → error; second call (triggered by Retry) → success.
             whenever(characterDetailUseCase(CHARACTER_ID))
@@ -147,7 +147,7 @@ class CharacterDetailViewModelTest {
         }
 
     @Test
-    fun `Retry cancels any stale in-flight load so only the fresh response reaches state`() =
+    fun `tapping retry while a request is still running cancels the old request`() =
         runTest {
             // First call returns a flow that emits Loading but never completes (simulates
             // a slow network). Second call (triggered by Retry) resolves immediately.
@@ -184,7 +184,7 @@ class CharacterDetailViewModelTest {
         }
 
     @Test
-    fun `Retry intent resets error state and sets isLoading true before response`() =
+    fun `tapping retry clears the error and triggers a new load`() =
         runTest {
             whenever(characterDetailUseCase(CHARACTER_ID)).thenReturn(
                 flowOf(Request.Error(ApiError("503", "Unavailable"))),
@@ -210,7 +210,7 @@ class CharacterDetailViewModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `ToggleFavourite is a no-op when character has no imageUrl`() =
+    fun `tapping the heart button on a character without an image does nothing`() =
         runTest {
             // Return a character with imageUrl = null so observeFavourite is never called.
             whenever(characterDetailUseCase(CHARACTER_ID)).thenReturn(
@@ -240,7 +240,7 @@ class CharacterDetailViewModelTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `ShareCharacter emits Share effect with all character details`() =
+    fun `tapping share produces the correct text for the share sheet`() =
         runTest {
             givenSuccessResponse(CHARACTER_ID)
             val expectedText = "Rick Sanchez · Human · Alive\n$IMAGE_URL"

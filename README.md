@@ -4,6 +4,14 @@ A production-quality Android application built with **Clean Architecture**, **MV
 
 ---
 
+## Note on Data Source
+
+This project uses the public [Rick & Morty API](https://rickandmortyapi.com/) as its data source instead of a marketplace API. The domain fields differ — characters have species, status, origin, and location rather than price, description, and seller info — but the **architecture is identical** to how a marketplace item list would be built. The repository layer, use cases, ViewModels, and UI state model are all data-agnostic; swapping the API and domain model would leave every architectural pattern intact.
+
+All three extra features from the brief (Search, Favourites, Share) are fully implemented.
+
+---
+
 ## Features
 
 | Feature | Detail |

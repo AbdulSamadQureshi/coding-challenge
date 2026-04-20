@@ -37,7 +37,7 @@ class CharactersScreenShotTest {
         )
 
     @Test
-    fun shimmerLoadingGrid() {
+    fun character_list_shows_shimmer_skeleton_while_loading() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 CharactersLoadingGrid()
@@ -47,7 +47,7 @@ class CharactersScreenShotTest {
     }
 
     @Test
-    fun populatedGrid() {
+    fun character_list_shows_grid_of_characters() {
         val characters =
             listOf(
                 CharacterUi(1, "Rick Sanchez", "Alive", "Human", null, false),
@@ -70,7 +70,7 @@ class CharactersScreenShotTest {
     }
 
     @Test
-    fun errorState() {
+    fun character_list_shows_full_screen_error_with_retry_button() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 ErrorMessage(
@@ -83,7 +83,7 @@ class CharactersScreenShotTest {
     }
 
     @Test
-    fun emptyState() {
+    fun character_list_shows_empty_state_when_no_characters_exist() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 EmptyState()
@@ -93,7 +93,7 @@ class CharactersScreenShotTest {
     }
 
     @Test
-    fun emptySearchState() {
+    fun character_list_shows_no_results_message_when_search_finds_nothing() {
         composeRule.setContent {
             CloseLoopWalletTheme(dynamicColor = false) {
                 EmptySearchState(query = "Pickle Rick")
@@ -103,7 +103,7 @@ class CharactersScreenShotTest {
     }
 
     @Test
-    fun paginationErrorBanner() {
+    fun character_list_shows_retry_banner_at_bottom_when_next_page_fails() {
         val characters =
             listOf(
                 CharacterUi(1, "Rick Sanchez", "Alive", "Human", null, false),

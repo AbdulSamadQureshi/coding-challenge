@@ -18,7 +18,7 @@ class ToggleFavouriteUseCaseTest {
     }
 
     @Test
-    fun `invoke calls addFavourite when not currently favourite`() =
+    fun `tapping favourite on an unfavourited character saves it`() =
         runBlocking {
             useCase("https://example.com/cover.jpg", isFavourite = false)
             verify(repository).addFavourite("https://example.com/cover.jpg")
@@ -26,7 +26,7 @@ class ToggleFavouriteUseCaseTest {
         }
 
     @Test
-    fun `invoke calls removeFavourite when currently favourite`() =
+    fun `tapping favourite on a saved character removes it`() =
         runBlocking {
             useCase("https://example.com/cover.jpg", isFavourite = true)
             verify(repository).removeFavourite("https://example.com/cover.jpg")

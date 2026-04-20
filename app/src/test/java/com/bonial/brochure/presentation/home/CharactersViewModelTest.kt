@@ -58,7 +58,7 @@ class CharactersViewModelTest {
     // ─── initial load ─────────────────────────────────────────────────────────
 
     @Test
-    fun `initial load populates state and marks matching items as favourite`() =
+    fun `opening the screen shows characters with correct favourite status`() =
         runTest {
             val rick = CharacterWithFavourite(1, "Rick", "Alive", "Human", "https://img/rick.png", true)
             val morty = CharacterWithFavourite(2, "Morty", "Alive", "Human", "https://img/morty.png", false)
@@ -78,7 +78,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `api error sets error state and clears loading`() =
+    fun `server failure shows error message and stops loading`() =
         runTest {
             val errorFlow = flowOf(Request.Error(ApiError("500", "Server exploded")))
             whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
@@ -101,7 +101,7 @@ class CharactersViewModelTest {
     // ─── search / debounce ────────────────────────────────────────────────────
 
     @Test
-    fun `Search intent does NOT fire the API before 1 000 ms`() =
+    fun `typing in the search bar does not call the API before 1 second`() =
         runTest {
             stubInitialLoad(page())
             whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
@@ -115,7 +115,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `Search intent fires the API after 1 000 ms debounce`() =
+    fun `typing in the search bar calls the API after 1 second and shows results`() =
         runTest {
             stubInitialLoad(page())
             whenever(getEnrichedCharactersUseCase(CharactersParams(1, "Rick")))
@@ -136,7 +136,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `Search with empty query fires immediately without debounce`() =
+    fun `clearing the search bar reloads all characters immediately`() =
         runTest {
             val fullPage = page(character(1, "Rick"), character(2, "Morty"))
             stubInitialLoad(fullPage)
@@ -173,7 +173,7 @@ class CharactersViewModelTest {
     // ─── retry ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `LoadCharacters retry fires immediately without debounce`() =
+    fun `tapping retry after an error reloads immediately without waiting`() =
         runTest {
             val errorFlow = flowOf(Request.Error(ApiError("500", "oops")))
             whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(errorFlow)
@@ -207,7 +207,7 @@ class CharactersViewModelTest {
     // ─── pagination ───────────────────────────────────────────────────────────
 
     @Test
-    fun `LoadNextPage appends characters from the next page`() =
+    fun `scrolling to the bottom adds the next page to the existing list`() =
         runTest {
             val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 2)
             stubInitialLoad(firstPage)
@@ -238,7 +238,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `LoadNextPage is ignored when already on the last page`() =
+    fun `scrolling past the last page does not trigger another request`() =
         runTest {
             stubInitialLoad(page(totalPages = 1))
 
@@ -251,7 +251,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `LoadNextPage is ignored while an initial load is still in flight`() =
+    fun `scrolling while the first page is still loading does nothing`() =
         runTest {
             // Emit Loading but never Success so isLoading stays true.
             val neverCompletes = flow<Request<CharactersWithFavouritePage>> { emit(Request.Loading) }
@@ -273,7 +273,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `Search cancels in-flight pagination so stale results do not arrive`() =
+    fun `starting a new search discards any page that was still loading`() =
         runTest {
             val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 3)
             stubInitialLoad(firstPage)
@@ -315,7 +315,7 @@ class CharactersViewModelTest {
     // ─── error state distinctions ─────────────────────────────────────────────
 
     @Test
-    fun `404 response is treated as empty results, not an error`() =
+    fun `search with no results shows empty state instead of an error`() =
         runTest {
             val notFoundFlow = flowOf(Request.Error(ApiError("404", "Not found.")))
             whenever(getEnrichedCharactersUseCase(CharactersParams(1))).thenReturn(notFoundFlow)
@@ -336,7 +336,7 @@ class CharactersViewModelTest {
         }
 
     @Test
-    fun `pagination failure sets paginationError, preserves loaded list, and leaves error null`() =
+    fun `failing to load the next page shows a retry banner without removing the current list`() =
         runTest {
             val firstPage = page(character(1, "Rick"), character(2, "Morty"), totalPages = 2)
             stubInitialLoad(firstPage)
@@ -372,7 +372,7 @@ class CharactersViewModelTest {
     // ─── favourites ───────────────────────────────────────────────────────────
 
     @Test
-    fun `ToggleFavourite ignores characters without an imageUrl`() =
+    fun `tapping the favourite button on a character without an image does nothing`() =
         runTest {
             stubInitialLoad(page())
 
